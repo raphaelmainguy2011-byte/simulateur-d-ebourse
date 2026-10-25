@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur de bourse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f2;--panel:#fff;--ink:#17211b;--mute:#6a766e;--line:#dfe5df;--side:#14301f;--acc:#1f7a4d;--up:#1a8a4f;--down:#c8402f;--blue:#2d6cdf}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1511;--panel:#16201a;--ink:#e8efe9;--mute:#8fa097;--line:#25332a;--side:#0a1e12;--acc:#3fbf80;--up:#3fbf80;--down:#ef6b58;--blue:#6aa0ff}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);display:flex}
+aside{width:210px;background:var(--side);color:#dfeee4;padding:22px 14px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+aside h1{font-size:17px;margin:0 8px 18px;font-weight:700;letter-spacing:.2px}
+aside button{all:unset;cursor:pointer;padding:10px 12px;border-radius:8px;font-size:14.5px}
+aside button:hover{background:rgba(255,255,255,.08)}
+aside button.on{background:rgba(255,255,255,.16);font-weight:600}
+aside button:focus-visible,.btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+aside .reset{margin-top:auto;font-size:12.5px;opacity:.7}
+main{flex:1;overflow:auto;padding:26px 30px;min-width:0}
+h2{margin:0 0 18px;font-size:24px}
+h3{margin:0 0 12px;font-size:15px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:14px}
+.two{grid-template-columns:2fr 1fr;margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.kpi small{color:var(--mute);font-size:12.5px}
+.kpi b{display:block;font-size:22px;margin-top:4px;font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:9px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:600;font-size:12.5px}
+.scroll{overflow-x:auto}
+.btn{all:unset;cursor:pointer;background:var(--acc);color:#fff;padding:7px 13px;border-radius:7px;font-size:13px;font-weight:600}
+.btn.sell{background:var(--down)}
+.btn:hover{filter:brightness(1.1)}
+input[type=number]{width:80px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.mk{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.mk .row{display:flex;gap:8px;align-items:center;margin-top:12px}
+.price{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13px;margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+.empty{color:var(--mute);font-size:14px;padding:10px 0}
+.donutwrap{display:flex;flex-direction:column;align-items:center}
+#toast{z-index:30;position:fixed;bottom:20px;right:20px;background:var(--side);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+@media(max-width:760px){body{flex-direction:column}aside{width:100%;flex-direction:row;flex-wrap:wrap;padding:10px}aside h1{width:100%;margin:0 4px 4px}aside .reset{margin:0 0 0 auto}main{padding:16px}.two{grid-template-columns:1fr}}
+.logo{width:30px;height:30px;border-radius:8px;object-fit:contain;background:#fff;vertical-align:middle;margin-right:8px;padding:2px}
+.logo.ph{display:inline-flex;align-items:center;justify-content:center;background:var(--acc);color:#fff;font-weight:700;font-size:14px}
+.clk{cursor:pointer}.clk:hover{border-color:var(--acc)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+#modal.on{display:flex}
+#modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:700px;max-height:92vh;overflow:auto}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mh h2{margin:0;font-size:21px}
+.lnk{color:var(--blue);font-size:13.5px;text-decoration:none}
+.ctl{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);font:inherit}
+.star{all:unset;cursor:pointer;float:right;font-size:19px;color:#e0a526;line-height:1}
+aside{overflow:auto}
+:root[data-theme=light]{--bg:#f3f5f2;--panel:#fff;--ink:#17211b;--mute:#6a766e;--line:#dfe5df;--side:#14301f;--acc:#1f7a4d;--up:#1a8a4f;--down:#c8402f;--blue:#2d6cdf}
+:root[data-theme=dark]{--bg:#0e1511;--panel:#16201a;--ink:#e8efe9;--mute:#8fa097;--line:#25332a;--side:#0a1e12;--acc:#3fbf80;--up:#3fbf80;--down:#ef6b58;--blue:#6aa0ff}
+#welcome{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:18px;overflow:auto;background:linear-gradient(155deg,#0c2417 0%,#14532d 55%,#1f7a4d 100%)}
+#welcome.on{display:flex}
+.wcard{background:var(--panel);color:var(--ink);border-radius:16px;padding:28px 26px;width:100%;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.wcard h1{margin:6px 0 4px;font-size:24px}.wcard h2{margin:18px 0 12px;font-size:18px}
+.wlogo{font-size:38px}.wsub{color:var(--mute);font-size:13.5px;margin:0}
+.wi{display:block;width:100%;margin:8px 0;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px}
+.wbtn{all:unset;box-sizing:border-box;display:block;width:100%;margin-top:12px;padding:12px;border-radius:9px;background:var(--acc);color:#fff;font-weight:700;cursor:pointer;text-align:center}
+.wbtn:hover{filter:brightness(1.1)}
+.wlink{all:unset;display:block;margin:12px auto 0;color:var(--blue);font-size:13px;cursor:pointer}
+.werr{color:var(--down);font-size:13px;min-height:18px;margin-top:6px}
+.wnote{color:var(--mute);font-size:12px;margin:14px 0 0}
+.wlist{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+.wchar{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-weight:600}
+.wchar:hover{border-color:var(--acc)}
+.wav{font-size:26px}.wbig{font-size:54px;margin-top:14px}
+.wavs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+.wavl{position:relative}.wavl input{position:absolute;opacity:0}
+.wavl span{display:inline-flex;width:44px;height:44px;align-items:center;justify-content:center;font-size:24px;border:2px solid var(--line);border-radius:10px;cursor:pointer}
+.wavl input:checked+span{border-color:var(--acc);background:rgba(31,122,77,.15)}
+.wavl input:focus-visible+span,.wchar:focus-visible,.wbtn:focus-visible,.wlink:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.rng{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.rb{all:unset;cursor:pointer;padding:5px 12px;border-radius:16px;border:1px solid var(--line);font-size:13px}
+.rb:hover{border-color:var(--acc)}.rb.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.rb:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.ig div{background:var(--bg);border-radius:8px;padding:8px 10px}.ig small{display:block;color:var(--mute);font-size:11.5px}.ig b{font-size:14px;font-variant-numeric:tabular-nums}
+/* ===== identité : salle des marchés (encre, sarcelle, safran) ===== */
+:root{--bg:#f3f5f9;--panel:#fff;--ink:#0f1c2e;--mute:#5d6b80;--line:#e1e6ee;--side:#0f1c2e;--acc:#0f8b8d;--up:#0f9d63;--down:#d6443f;--blue:#2f5bea;--gold:#e9a820}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1320;--panel:#121c2d;--ink:#e7edf6;--mute:#8d9bb0;--line:#223048;--side:#080f1a;--acc:#3cc9c4;--up:#34d399;--down:#f4726b;--blue:#7ea3ff;--gold:#f2c14e}}
+:root[data-theme=light]{--bg:#f3f5f9;--panel:#fff;--ink:#0f1c2e;--mute:#5d6b80;--line:#e1e6ee;--side:#0f1c2e;--acc:#0f8b8d;--up:#0f9d63;--down:#d6443f;--blue:#2f5bea;--gold:#e9a820}
+:root[data-theme=dark]{--bg:#0b1320;--panel:#121c2d;--ink:#e7edf6;--mute:#8d9bb0;--line:#223048;--side:#080f1a;--acc:#3cc9c4;--up:#34d399;--down:#f4726b;--blue:#7ea3ff;--gold:#f2c14e}
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+body{font-family:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif}
+.col{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+main{padding:24px 32px 40px}
+h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 20px}
+h3{font-weight:700}
+.card{border-radius:10px;box-shadow:none}
+aside{width:224px;padding:20px 12px;gap:2px}
+aside h1{font-size:17px;font-weight:800;letter-spacing:-.01em;margin:2px 10px 4px}
+#who{display:flex;gap:10px;align-items:center;margin:8px 4px 18px;padding:10px;border-radius:10px;background:rgba(255,255,255,.07)}
+#who b{display:block;font-size:14px;color:#fff}#who small{color:#9fb3cc;font-size:12px}.wavs1{font-size:26px}
+aside button,#news{border-radius:8px;color:#c6d4e6;font-weight:500}
+aside button:hover,#news:hover{background:rgba(255,255,255,.07);color:#fff}
+aside button.on{background:rgba(255,255,255,.1);color:#fff;font-weight:700;box-shadow:inset 3px 0 0 #3cc9c4}
+#tape{background:var(--side);color:#cfe0f5;overflow:hidden;white-space:nowrap;font-size:13px;height:36px;display:flex;align-items:center;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)}
+.tapetrack{display:inline-block;animation:tape linear infinite;will-change:transform}
+#tape:hover .tapetrack{animation-play-state:paused}
+.ti{display:inline-block;padding:0 20px;border-right:1px solid rgba(255,255,255,.14);font-variant-numeric:tabular-nums}
+.ti b{color:#fff;margin-right:8px;font-weight:700}.ti i{font-style:normal;margin-left:8px;font-weight:600}
+.ti i.up{color:#5be3a8}.ti i.down{color:#ff8f88}.tapeempty{padding:0 20px;color:#9fb3cc}
+@keyframes tape{to{transform:translateX(-50%)}}
+.kpi small{font-size:12.5px;color:var(--mute);font-weight:500}
+.kpi b{font-size:22px;letter-spacing:-.02em;margin-top:6px;font-weight:700}
+@media(min-width:1250px){.kpis .card:nth-child(2){grid-column:span 2}.kpis .card:nth-child(2) b{font-size:34px}}
+.price{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.chg.up,.chg.down{display:inline-block;padding:1px 9px;border-radius:99px;font-weight:600;background:color-mix(in srgb,currentColor 14%,transparent)}
+.btn{border-radius:8px;padding:8px 14px}
+.logo{border:1px solid var(--line);border-radius:8px}
+#modal{background:rgba(8,15,26,.6);backdrop-filter:blur(4px)}
+#modal .box{border-radius:14px}
+#modal.on .box{animation:pop .16s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}}
+#toast{border-radius:10px;font-weight:600}
+.lvl{display:flex;gap:18px;align-items:center;margin-bottom:6px}
+.lvlbig{font-size:40px;font-weight:800;line-height:1;width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ink);color:var(--panel);letter-spacing:-.03em;flex-shrink:0}
+.gcat{margin:26px 0 10px;font-size:16px}
+.goals{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.goal{display:flex;gap:12px;align-items:flex-start}
+.goal .gi{font-size:24px;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg);flex-shrink:0}
+.goal .gb{min-width:0;flex:1}.goal p{margin:2px 0 8px;color:var(--mute);font-size:13px}.goal small{color:var(--mute);font-size:12px}
+.goal.done{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.gok{float:right;font-size:11.5px;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--gold) 32%,transparent);padding:1px 8px;border-radius:99px}
+.pbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:2px 0 4px}
+.pbar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .4s}
+.pbar.sm{height:6px;flex:1;margin:0}
+.grow{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:13.5px}.grow>span{width:200px;flex-shrink:0}
+#welcome{background:linear-gradient(160deg,#0a1626,#0f2a3f 60%,#0f4a52)}
+#welcome::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600' preserveAspectRatio='none'><polyline points='0,520 120,470 220,495 340,400 450,430 560,330 680,350 800,240 920,270 1040,150 1200,90' fill='none' stroke='%233cc9c4' stroke-opacity='.4' stroke-width='3'/></svg>") center/cover no-repeat;pointer-events:none}
+.wcard{position:relative;z-index:1;border-radius:16px}.wcard h1{font-weight:800;letter-spacing:-.02em}
+.wbtn{border-radius:10px}
+@media(prefers-reduced-motion:reduce){.tapetrack{animation:none}#tape{overflow-x:auto}#modal.on .box{animation:none}.pbar i{transition:none}}
+@media(max-width:760px){.col{min-height:0}main{padding:16px}.grow>span{width:130px}aside{width:100%}}
+.ntitle{margin:18px 0 6px;font-size:15px}
+.nsum{font-size:13px;margin:0 0 6px;color:var(--mute)}
+.nit{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.nit:hover b{text-decoration:underline}
+.nit b{display:block;font-size:13.5px;font-weight:600;line-height:1.35}.nit small{color:var(--mute);font-size:12px}
+.nd{flex-shrink:0;width:10px;height:10px;border-radius:50%;margin-top:5px;background:var(--mute)}.nd.p{background:var(--up)}.nd.n{background:var(--down)}
+.nnote{font-size:11.5px;color:var(--mute);margin-top:8px}.nlinks{font-size:13px;margin-top:8px}
+.btabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.btab{all:unset;cursor:pointer;padding:10px 16px;border-radius:10px;border:1px solid var(--line);font-weight:600;font-size:14px;background:var(--panel)}
+.btab:hover{border-color:var(--acc)}.btab.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btab:focus-visible,.btoc button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.book{display:grid;grid-template-columns:240px 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.btoc{background:var(--bg);padding:12px 8px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.btoc button{all:unset;box-sizing:border-box;cursor:pointer;padding:8px 10px;border-radius:8px;font-size:13.5px;color:var(--mute)}
+.btoc button:hover{background:var(--panel)}.btoc button.on{background:var(--panel);color:var(--ink);font-weight:700;box-shadow:inset 3px 0 0 var(--acc)}
+.btoc button.read::after{content:" ✓";color:var(--up)}
+.bpage{padding:28px 34px;min-height:360px}.bpage .bn{color:var(--mute);font-size:13px;margin-bottom:4px}
+.bpage h3{font-size:22px;margin:0 0 14px;letter-spacing:-.01em}
+.bpage p,.bpage li{font-size:15px;line-height:1.65}.bpage ul{padding-left:20px}.bpage li{margin:6px 0}
+.gtip{margin-top:16px;padding:12px 14px;border-left:3px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:0 8px 8px 0;font-size:14px;line-height:1.55}
+.gex{margin:14px 0;padding:12px 14px;border:1px dashed var(--line);border-radius:8px;font-size:14px;line-height:1.55;background:var(--bg)}
+.bfoot{display:flex;justify-content:space-between;gap:10px;padding:14px 34px;border-top:1px solid var(--line)}
+.btn[disabled]{opacity:.4;cursor:default;pointer-events:none}
+details.nnote summary{cursor:pointer}
+@media(max-width:760px){.book{grid-template-columns:1fr}.btoc{border-right:0;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto}.btoc button{white-space:nowrap}.bpage{padding:20px 18px}.bfoot{padding:12px 18px}}
+</style>
+</head>
+<body>
+<aside>
+  <h1>Simulateur de bourse</h1>
+  <div id="who"></div>
+  <button data-v="general" class="on">🏠 Vue générale</button>
+  <button data-v="portfolio">💼 Portefeuille</button>
+  <button data-v="markets">🌍 Marchés</button>
+  <button data-v="goals">🏆 Objectifs</button>
+  <button data-v="guide">📖 Guide</button>
+  <div id="status" style="font-size:12.5px;margin:14px 8px 0;line-height:1.4"></div>
+  <button id="keybtn">🔑 Activer les vrais cours</button>
+  <a href="https://www.reuters.com/markets/" id="news" style="all:unset;cursor:pointer;padding:10px 12px;border-radius:8px;font-size:14.5px;display:block">🌐 Actualités mondiales</a>
+  <button id="profbtn"></button>
+  <button id="themebtn">🌓 Thème clair / sombre</button>
+  <button id="csvbtn">⬇️ Exporter l'historique</button>
+  <button class="reset" id="reset">Réinitialiser (250 €)</button>
+</aside>
+<div class="col"><div id="tape" aria-hidden="true"></div><main id="main"></main></div>
+<div id="welcome"></div>
+<div id="toast" role="status"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBzn0CwFYbfk84TyMZ28KcvX0tYl18ou-0",
+  authDomain: "bourse-entrainement.firebaseapp.com",
+  databaseURL: "https://bourse-entrainement-default-rtdb.firebaseio.com",
+  projectId: "bourse-entrainement",
+  storageBucket: "bourse-entrainement.firebasestorage.app",
+  messagingSenderId: "347524789623",
+  appId: "1:347524789623:web:99907a43f027f32e815d72",
+  measurementId: "G-XPJLNR9S0C"
+};
+let fbReady = false, fbAuth = null, fbDb = null, fbUser = null, remoteSaveTimer = null;
+try { firebase.initializeApp(firebaseConfig); fbAuth=firebase.auth(); fbDb=firebase.database(); fbReady=true; } catch(e) { console.error(e); }
+const STOCKS={};"AAPL:Apple:apple.com:280,MSFT:Microsoft:microsoft.com:390,NVDA:Nvidia:nvidia.com:150,TSLA:Tesla:tesla.com:300,AMZN:Amazon:amazon.com:200,GOOGL:Alphabet (Google):google.com:180,META:Meta:meta.com:600,NFLX:Netflix:netflix.com:900,AMD:AMD:amd.com:160,ORCL:Oracle:oracle.com:180,ADBE:Adobe:adobe.com:400,CRM:Salesforce:salesforce.com:280,IBM:IBM:ibm.com:240,CSCO:Cisco:cisco.com:65,QCOM:Qualcomm:qualcomm.com:160,UBER:Uber:uber.com:80,DIS:Disney:disney.com:110,KO:Coca-Cola:coca-cola.com:65,PEP:PepsiCo:pepsico.com:150,MCD:McDonald's:mcdonalds.com:300,WMT:Walmart:walmart.com:95,COST:Costco:costco.com:950,JPM:JPMorgan:jpmorganchase.com:280,V:Visa:visa.com:340,MA:Mastercard:mastercard.com:560,XOM:ExxonMobil:exxonmobil.com:110,JNJ:Johnson & Johnson:jnj.com:160,HD:Home Depot:homedepot.com:380,PLTR:Palantir:palantir.com:150,SHOP:Shopify:shopify.com:110,PANW:Palo Alto Networks:paloaltonetworks.com:190,NOW:ServiceNow:servicenow.com:900,INTU:Intuit:intuit.com:650,TXN:Texas Instruments:ti.com:190,MU:Micron:micron.com:110,AVGO:Broadcom:broadcom.com:300,PG:Procter & Gamble:pg.com:160,BAC:Bank of America:bankofamerica.com:45,GS:Goldman Sachs:goldmansachs.com:600,MS:Morgan Stanley:morganstanley.com:130,AXP:American Express:americanexpress.com:300,BLK:BlackRock:blackrock.com:1000,LLY:Eli Lilly:lilly.com:800,MRK:Merck:merck.com:100,ABBV:AbbVie:abbvie.com:190,UNH:UnitedHealth:unitedhealthgroup.com:500,CVX:Chevron:chevron.com:150,GE:GE Aerospace:geaerospace.com:230,CAT:Caterpillar:caterpillar.com:400,LMT:Lockheed Martin:lockheedmartin.com:450,AMAT:Applied Materials:appliedmaterials.com:180,LRCX:Lam Research:lamresearch.com:90,KLAC:KLA:kla.com:800,ARM:Arm Holdings:arm.com:150,BKNG:Booking Holdings:booking.com:5000,PM:Philip Morris:pmi.com:130,SPGI:S&P Global:spglobal.com:520,COIN:Coinbase:coinbase.com:280,TMO:Thermo Fisher:thermofisher.com:550,ABT:Abbott:abbott.com:130,DHR:Danaher:danaher.com:220,REGN:Regeneron:regeneron.com:700,ISRG:Intuitive Surgical:intuitive.com:500,RTX:RTX:rtx.com:130,TSM:TSMC:tsmc.com:200,ASML:ASML:asml.com:800,SAP:SAP:sap.com:250,NVO:Novo Nordisk:novonordisk.com:70,SHEL:Shell:shell.com:70,TTE:TotalEnergies:totalenergies.com:60,UL:Unilever:unilever.com:60,AZN:AstraZeneca:astrazeneca.com:70,NVS:Novartis:novartis.com:110,TM:Toyota:toyota.com:200,BABA:Alibaba:alibaba.com:90".split(",").forEach(x=>{const a=x.split(":");STOCKS[a[0]]=[a[1],+a[3],a[2]]});
+const COLORS=["#1f7a4d","#2d6cdf","#e0a526","#c8402f","#8a5cd6","#17a2b8","#e07a2a","#7d8a80"];
+const START=250,FEE=0.002,KEYP="bourse_sim_v2_";let PROFILE="",LOGGED=false,KEY=KEYP+"_";
+const SECM={"Technologie":"AAPL MSFT NVDA AMD INTC ORCL ADBE CRM IBM CSCO QCOM PLTR NOW INTU TXN MU AVGO PANW AMAT LRCX KLAC ADI MRVL ANET CRWD FTNT DDOG NET ZS WDAY TEAM SNOW MDB HPQ DELL ARM","Internet et médias":"GOOGL META NFLX UBER SPOT DIS AMZN SHOP ABNB T VZ PINS RBLX EA TTWO CMCSA DASH","Consommation":"KO PEP MCD NKE SBUX WMT COST HD LULU TGT LOW CMG PG CL DG BKNG MAR HLT YUM KMB GIS HSY MO PM KHC TJX ORLY EL","Finance":"JPM V MA PYPL BAC GS MS AXP BLK C WFC SCHW USB PNC COF BX SPGI ICE COIN","Industrie, auto et énergie":"TSLA F BA XOM CVX GE CAT LMT DE HON RTX NOC UPS FDX COP SLB EOG NEE GM","Santé":"PFE JNJ LLY MRK ABBV UNH TMO ABT DHR BMY AMGN GILD REGN VRTX ISRG MDT CVS","International (cotées aux États-Unis)":"TSM ASML SAP NVO SHEL TTE SNY UL AZN NVS TM SONY BABA DEO"};
+const sec=k=>Object.keys(SECM).find(n=>SECM[n].split(" ").includes(k))||"Autre";
+let F={q:"",sec:"",sort:"",fav:false,n:24};let MR=86400,HIST={};
+const RANGES=[[3600,"1 h","1min",60],[86400,"1 jour","5min",78],[604800,"1 semaine","30min",70],[2592000,"1 mois","1day",22],[15552000,"6 mois","1day",130],[31536000,"1 an","1day",252]];
+let S=ensure(fresh()),view="general";
+function fresh(){const p={};for(const k in STOCKS)p[k]=STOCKS[k][1];return{cash:START,pos:{},hist:[],prices:p,open:{...p},series:[{t:Date.now(),v:START}],start:START,ach:{},seen:{},read:{},pt:{},q:{},orders:[],fav:{}}}
+function ensure(x){
+  x.pt=x.pt||{};x.q=x.q||{};x.orders=x.orders||[];x.fav=x.fav||{};x.source=x.source||"";x.start=x.start||100;
+  if(x.hist&&!x.hist.length&&!Object.keys(x.pos||{}).length&&x.start<START){x.cash=START;x.start=START;x.series=[{t:Date.now(),v:START}]}x.ach=x.ach||{};x.seen=x.seen||{};x.read=x.read||{};
+  if(x.got){for(const k in x.got)if(!x.pt[k])x.pt[k]=Date.now()-3600e3;delete x.got}
+  delete x.hp;delete x.ph;
+  for(const k in STOCKS){if(!x.prices[k])x.prices[k]=x.open[k]=STOCKS[k][1]}
+  return x;
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.prices)return ensure(s)}catch(e){}return ensure(fresh())}
+let lastSave=0;function saveSoon(){if(Date.now()-lastSave>15000){lastSave=Date.now();save()}}
+function save(){
+  if(!LOGGED)return;
+  const snapshot=JSON.stringify(S);
+  try{localStorage.setItem(KEY,snapshot)}catch(e){}
+  if(fbReady && fbUser){
+    clearTimeout(remoteSaveTimer);
+    remoteSaveTimer=setTimeout(()=>{ if(fbUser) fbDb.ref('users/'+fbUser.uid+'/state').set(JSON.parse(snapshot)).catch(e=>toast('Sauvegarde en ligne impossible : vérifie les règles Firebase.')); },900);
+  }
+}
+const logo=k=>`<img class="logo" alt="" src="https://www.google.com/s2/favicons?domain=${STOCKS[k][2]}&sz=64" onerror="this.outerHTML='<span class=\\'logo ph\\'>${k[0]}</span>'">`;
+const eur=n=>n.toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
+const pct=n=>(n>=0?"+":"")+n.toFixed(2).replace(".",",")+" %";
+const sgn=n=>(n>=0?"+":"")+eur(n);
+const cls=n=>n>=0?"up":"down";
+const invested=()=>Object.entries(S.pos).reduce((a,[k,p])=>a+p.qty*p.avg,0);
+const holdings=()=>Object.entries(S.pos).reduce((a,[k,p])=>a+p.qty*S.prices[k],0);
+const total=()=>S.cash+holdings();
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+
+function buy(sym,amt,auto){
+  amt=parseFloat(amt);
+  if(!(amt>0)){if(!auto)toast("Entre un montant en euros.");return false}
+  if(amt>S.cash+1e-9){if(!auto)toast("Capital disponible insuffisant.");return false}
+  if(!ready(sym)){if(!auto)toast("Le cours de cette entreprise n'est pas encore chargé…");return false}
+  const pr=S.prices[sym],fee=amt*FEE,net=amt-fee,q=net/pr,p=S.pos[sym]||{qty:0,avg:0};
+  p.avg=(p.qty*p.avg+net)/(p.qty+q);p.qty+=q;S.pos[sym]=p;S.cash-=amt;
+  S.hist.unshift({t:Date.now(),type:"Achat",sym,qty:q,price:pr,amt,fee,auto});
+  if(!auto){snap();save();toast("Achat de "+STOCKS[sym][0]+" : "+eur(amt));render();if(openSym)drawModal()}
+  return true;
+}
+function sell(sym,auto){
+  const p=S.pos[sym];if(!p)return false;
+  const pr=S.prices[sym],gross=p.qty*pr,fee=gross*FEE,net=gross-fee;
+  S.cash+=net;S.hist.unshift({t:Date.now(),type:"Vente",sym,qty:p.qty,price:pr,amt:net,fee,auto,pnl:net-p.qty*p.avg});
+  delete S.pos[sym];
+  if(!auto){snap();save();toast("Vente de "+STOCKS[sym][0]+" : "+eur(net));render();if(openSym)drawModal()}
+  return true;
+}
+function checkOrders(){
+  S.orders=S.orders.filter(o=>{const pr=S.prices[o.sym];if(!ready(o.sym))return true;
+    if(o.type==="buy"&&pr<=o.price){if(buy(o.sym,o.amt,true))toast("Ordre exécuté : achat de "+STOCKS[o.sym][0]);else toast("Ordre annulé (capital insuffisant) : "+STOCKS[o.sym][0]);return false}
+    if(o.type==="sell"&&pr>=o.price){if(sell(o.sym,true))toast("Ordre exécuté : vente de "+STOCKS[o.sym][0]);return false}
+    return true});
+}
+function snap(){ensure(S);checkOrders();checkGoals();drawTape();S.series.push({t:Date.now(),v:total()});if(S.series.length>300)S.series.shift();refreshModal()}
+
+let APIKEY="";try{APIKEY=localStorage.getItem("td_key")||""}catch(e){}
+let liveErr=false,yahooErr=false,rate=0.92,rateT=0,lastQuote=0,busyQ=false,dayStop="",lastWarn=0,lastYahooAttempt=0;const TDU=[];
+const ready=k=>!S.source||!!(S.pt&&S.pt[k]);
+const priceText=k=>ready(k)?eur(S.prices[k]):"—";
+const chgLabel=()=>S.source?"vs clôture préc.":"depuis le début";
+const today=()=>new Date().toISOString().slice(0,10);
+const hhmm=()=>new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+function warn(m){if(Date.now()-lastWarn>60000){lastWarn=Date.now();toast(m)}}
+function usage(){try{const u=JSON.parse(localStorage.getItem("td_usage"))||{};return u.d===today()?u:{d:today(),n:0}}catch(e){return{d:today(),n:0}}}
+function addUsage(c){const u=usage();u.n+=c;try{localStorage.setItem("td_usage",JSON.stringify(u))}catch(e){}}
+function mktOpen(){
+  try{const p=new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",weekday:"short",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t).value,m=(+g("hour")%24)*60+(+g("minute"));
+    return!["Sat","Sun"].includes(g("weekday"))&&m>=570&&m<960}catch(e){return true}
+}
+function ageText(k){
+  if(!S.pt[k]||Date.now()-S.pt[k]<600000)return"";
+  const z=new Date(S.pt[k]);return"cours de "+z.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})+" "+z.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+}
+function setStatus(){
+  const el=document.getElementById("status");
+  const nl=Object.keys(STOCKS).filter(k=>S.pt&&S.pt[k]).length,N=Object.keys(STOCKS).length,stale=yahooErr&&(!APIKEY||liveErr);
+  if(S.source&&nl&&!stale){
+    const eta=nl<N?" (≈ "+Math.ceil((N-nl)/(S.source==="Yahoo Finance"?30:7))+" min)":"";
+    el.innerHTML='<span class="up">● Cours réels · '+esc(S.source)+'</span><br>'+(S.live?"mise à jour "+S.live+"<br>":"")+nl+"/"+N+" cours chargés"+eta+(APIKEY?"<br>crédits Twelve Data : "+usage().n+"/800":"")+(dayStop===today()?"<br><b>limite Twelve Data atteinte</b>":"");
+  }else if(S.source&&nl){
+    el.innerHTML='<span style="color:#e0a526">● Derniers cours réels connus</span><br>connexion impossible pour le moment ('+nl+'/'+N+' en mémoire)<br>nouvel essai automatique';
+  }else el.innerHTML='<span style="color:#e0a526">● Cours simulés</span><br>'+(APIKEY?(liveErr?"clé Twelve Data refusée":"connexion aux données réelles en attente"):(yahooErr?"Yahoo indisponible ou bloqué par le navigateur":"tentative de connexion à Yahoo Finance…"))+'<br><span style="font-size:11px">Les prix simulés sont signalés comme tels.</span>';
+}
+async function tdGet(path,params,credits){
+  if(dayStop===today())throw new Error("limite quotidienne atteinte");
+  for(;;){const now=Date.now();while(TDU.length&&now-TDU[0]>60000)TDU.shift();if(TDU.length+credits<=7)break;await new Promise(r=>setTimeout(r,Math.max(500,60050-(now-TDU[0]))))}
+  for(let i=0;i<credits;i++)TDU.push(Date.now());addUsage(credits);
+  const r=await fetch("https://api.twelvedata.com/"+path+"?"+params+"&apikey="+encodeURIComponent(APIKEY));return r.json();
+}
+let ratePromise=null;
+function getRate(){
+  if(ratePromise&&Date.now()-rateT<6*3600e3)return ratePromise;
+  rateT=Date.now();
+  ratePromise=(async()=>{try{const r=await fetch("https://api.frankfurter.app/latest?from=USD&to=EUR");const v=(await r.json()).rates.EUR;if(v>0)rate=v;else throw new Error("taux vide")}catch(e){rateT=Date.now()-6*3600e3+60000}})();
+  return ratePromise;
+}
+function apiFail(j){
+  const msg=String(j&&j.message||""),code=+(j&&j.code);
+  if(code===401||code===403||/api ?key/i.test(msg)){liveErr=true;S.live=null;setStatus();toast("Clé refusée par Twelve Data : retour aux cours simulés.")}
+  else if(code===429&&/day|daily/i.test(msg)){dayStop=today();setStatus();warn("Limite gratuite du jour atteinte (800) : les cours restent figés jusqu'à demain.")}
+  else warn("Twelve Data : "+(msg||"réponse inattendue").slice(0,100));
+}
+async function yahooChart(symbol,range="1d",interval="1m"){
+  const url="https://query1.finance.yahoo.com/v8/finance/chart/"+encodeURIComponent(symbol)+"?range="+encodeURIComponent(range)+"&interval="+encodeURIComponent(interval)+"&includePrePost=false";
+  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw new Error("Yahoo HTTP "+r.status);
+  const j=await r.json(),root=j&&j.chart&&j.chart.result&&j.chart.result[0];
+  if(!root||!root.meta)throw new Error((j&&j.chart&&j.chart.error&&j.chart.error.description)||"réponse Yahoo vide");
+  return root;
+}
+async function loadYahooQuote(k){
+  const root=await yahooChart(k,"1d","1m"),m=root.meta||{},q=((root.indicators||{}).quote||[])[0]||{};
+  const closes=q.close||[],last=[...closes].reverse().find(v=>Number.isFinite(+v)&&+v>0),price=+(m.regularMarketPrice||last);
+  if(!(price>0))throw new Error("aucun cours Yahoo pour "+k);
+  await getRate();const pc=+(m.chartPreviousClose||m.previousClose||price),cv=v=>+v>0&&isFinite(+v)?+v*rate:0;
+  S.prices[k]=price*rate;S.open[k]=pc*rate;S.pt[k]=Date.now();
+  const hi=+(m.regularMarketDayHigh||Math.max(...(q.high||[]).filter(v=>+v>0),0)),lo=+(m.regularMarketDayLow||Math.min(...(q.low||[]).filter(v=>+v>0),Infinity));
+  S.q[k]={open:cv(m.regularMarketOpen),hi:cv(hi),lo:cv(lo),vol:+m.regularMarketVolume||0,avg:0,w52lo:cv(m.fiftyTwoWeekLow),w52hi:cv(m.fiftyTwoWeekHigh),ex:m.fullExchangeName||m.exchangeName||"Yahoo Finance"};
+  return true;
+}
+function applyQuote(k,q){
+  const c=+q.close;if(!(c>0))return false;const pc=+q.previous_close,v=x=>+x>0?+x*rate:0,f=q.fifty_two_week||{};
+  S.prices[k]=c*rate;S.open[k]=(pc>0?pc:c)*rate;S.pt[k]=Date.now();
+  S.q[k]={open:v(q.open),hi:v(q.high),lo:v(q.low),vol:+q.volume||0,avg:+q.average_volume||0,w52lo:v(f.low),w52hi:v(f.high),ex:q.exchange||""};
+  return true;
+}
+async function loadQuotes(ks){
+  if(!ks.length)return 0;
+  lastYahooAttempt=Date.now();let ok=0;
+  // Yahoo Finance est tenté en premier. Chaque titre est demandé séparément car son endpoint de graphique n'offre pas de lot fiable.
+  try{
+    await Promise.all(ks.map(async k=>{try{await loadYahooQuote(k);ok++}catch(e){}}));
+  }catch(e){}
+  if(ok){yahooErr=false;S.source="Yahoo Finance";liveErr=false;S.live=hhmm();snap();saveSoon();setStatus();render(true);return ok;}
+  yahooErr=true;
+  // Repli sur Twelve Data si une clé personnelle a été configurée.
+  if(APIKEY&&!liveErr){
+    let j;try{await getRate();j=await tdGet("quote","symbol="+ks.map(encodeURIComponent).join(","),ks.length)}catch(e){warn("Yahoo indisponible ; Twelve Data inaccessible ("+String(e.message||e).slice(0,60)+").");setStatus();return 0}
+    if(j&&j.status==="error"&&!j[ks[0]]){apiFail(j);setStatus();return 0}
+    const m=ks.length===1&&!j[ks[0]]?{[ks[0]]:j}:j;
+    for(const k of ks){const q=m[k];if(q&&q.status!=="error"&&applyQuote(k,q))ok++;else if(q&&q.status==="error")apiFail(q)}
+    if(ok){S.source="Twelve Data";liveErr=false;S.live=hhmm();snap();saveSoon();setStatus();render(true);return ok;}
+  }
+  setStatus();return 0;
+}
+function pickDue(n){
+  const now=Date.now(),mo=mktOpen(),ord=new Set(S.orders.map(o=>o.sym)),vis=new Set(view==="markets"&&LOGGED?marketKeys().slice(0,F.n):[]),c=[];
+  for(const k of Object.keys(STOCKS)){
+    const hot=S.pos[k]||ord.has(k),w=hot?4:vis.has(k)?3:S.fav[k]?2:1,iv=hot?120:vis.has(k)?600:S.fav[k]?300:1800;let sc;
+    if(!S.pt[k])sc=1e6*w;else{if(!mo&&now-S.pt[k]<6*3600e3)continue;sc=(now-S.pt[k])/(iv*1000);if(sc<1)continue}
+    c.push([sc,k]);
+  }
+  c.sort((a,b)=>b[0]-a[0]);return c.slice(0,n).map(x=>x[1]);
+}
+const unloadedN=()=>Object.keys(STOCKS).filter(k=>!S.pt[k]).length;
+async function schedule(){
+  if(busyQ||openSym||document.hidden||(APIKEY&&dayStop===today())||(APIKEY&&usage().n>=700))return;
+  const now=Date.now(),free=APIKEY?7-TDU.filter(t=>now-t<60000).length:4;if(free<1)return;
+  const ks=pickDue(unloadedN()?Math.min(4,free):1);if(!ks.length)return;
+  busyQ=true;try{await loadQuotes(ks)}finally{busyQ=false}
+}
+async function freshen(k){
+  if(yahooErr&&(!APIKEY||liveErr)&&Date.now()-lastYahooAttempt<300000)return;
+  if(!S.pt[k]||(mktOpen()&&Date.now()-S.pt[k]>90000))await loadQuotes([k]);
+}
+async function doBuy(sym,amt){await freshen(sym);buy(sym,amt)}
+async function doSell(sym){await freshen(sym);sell(sym)}
+function simulate(){
+  for(const k in S.prices){if(S.pt&&S.pt[k])continue;S.prices[k]=Math.max(1,S.prices[k]*(1+(Math.random()-.5)*0.012))}
+  snap();saveSoon();render(true);
+}
+function tick(){
+  if(!LOGGED)return;
+  if((!APIKEY&&!yahooErr)||(APIKEY&&!liveErr)){if(Date.now()-lastQuote>(unloadedN()?6000:20000)){lastQuote=Date.now();schedule()}return}
+  if(Date.now()-lastYahooAttempt>300000){yahooErr=false;lastQuote=0;setStatus();schedule();if(!APIKEY||liveErr)return}
+  simulate();
+}
+function openKey(){
+  openSym=null;
+  modal.innerHTML=`<div class="box"><div class="mh"><h2>🔑 Sources des cours de bourse</h2><button class="btn" data-close="1" style="background:var(--mute)">Fermer</button></div>
+  <p style="color:var(--mute);font-size:13.5px">Le simulateur essaie d'abord Yahoo Finance sans clé. Si Yahoo bloque l'accès depuis ton navigateur, il utilise Twelve Data comme solution de repli.<br><br>Pour activer ce repli, crée une clé sur <a class="lnk" href="https://twelvedata.com/register">Twelve Data</a>, puis colle-la ci-dessous. Laisse le champ vide pour utiliser seulement Yahoo.</p>
+  <input id="kinp" class="ctl" placeholder="Clé API Twelve Data (facultative)" value="${esc(APIKEY)}" style="width:100%;margin-bottom:10px">
+  <p style="color:var(--mute);font-size:12.5px;margin-top:0">Les limites dépendent de ton forfait Twelve Data. Les cours sont chargés progressivement et gardés dans ce navigateur. Yahoo Finance est une source non officielle : l’accès direct peut être bloqué ou changer sans préavis.</p>
+  <input id="kfh" class="ctl" placeholder="Clé Finnhub (facultative, pour les actualités)" value="${esc(FHKEY0())}" style="width:100%;margin-bottom:6px">
+  <p style="color:var(--mute);font-size:12.5px;margin-top:0">Facultatif : si les actualités ne s'affichent pas, une clé gratuite sur <a class="lnk" href="https://finnhub.io/register">finnhub.io</a> les rend plus fiables.</p>
+  <div style="display:flex;flex-direction:column;gap:6px"><button class="btn" data-ksave="reset">Enregistrer et repartir de 250 € (conseillé)</button><button class="btn" data-ksave="keep" style="background:var(--mute)">Enregistrer sans réinitialiser</button></div></div>`;
+  modal.classList.add("on");
+}
+document.getElementById("keybtn").onclick=openKey;
+
+let NQ=[],NB=false;
+function notify(m){NQ.push(m);if(!NB)pumpN()}
+function pumpN(){const m=NQ.shift();if(!m){NB=false;return}NB=true;toast(m);setTimeout(pumpN,2600)}
+const gainPct=()=>Math.max(0,(total()/(S.start||100)-1)*100);
+const sells=()=>S.hist.filter(h=>h.type==="Vente"),buys=()=>S.hist.filter(h=>h.type==="Achat");
+function holdOk(){const now=Date.now();return Object.keys(S.pos).some(k=>{const b=buys().filter(h=>h.sym===k);return b.length&&now-Math.min(...b.map(h=>h.t))>864e5})}
+const GOALS=[
+ {id:"first",cat:"Pour bien démarrer",ic:"🥇",t:"Premier achat",d:"Achète ta première action.",p:()=>[buys().length,1]},
+ {id:"sell1",cat:"Pour bien démarrer",ic:"🔄",t:"Première vente",d:"Vends une position.",p:()=>[sells().length,1]},
+ {id:"fav3",cat:"Pour bien démarrer",ic:"⭐",t:"Coups de cœur",d:"Mets 3 entreprises en favoris.",p:()=>[Object.values(S.fav).filter(Boolean).length,3]},
+ {id:"cur5",cat:"Pour bien démarrer",ic:"🔍",t:"Curieux",d:"Ouvre la fiche de 5 entreprises.",p:()=>[Object.keys(S.seen).length,5]},
+ {id:"cur25",cat:"Pour bien démarrer",ic:"🧭",t:"Explorateur",d:"Ouvre la fiche de 25 entreprises.",p:()=>[Object.keys(S.seen).length,25]},
+ {id:"real",cat:"Pour bien démarrer",ic:"📡",t:"Données réelles",d:"Utilise les vrais cours de bourse.",p:()=>[S.source?1:0,1]},
+ {id:"guide",cat:"Pour bien démarrer",ic:"📖",t:"Bien informé",d:"Lis toutes les pages du livret.",p:()=>[Object.keys(S.read).length,GUIDE.reduce((a,p)=>a+p.pages.length,0)]},
+ {id:"div5",cat:"Construire son portefeuille",ic:"🧺",t:"Diversifié",d:"Possède 5 entreprises en même temps.",p:()=>[Object.keys(S.pos).length,5]},
+ {id:"div10",cat:"Construire son portefeuille",ic:"🌍",t:"Grand portefeuille",d:"Possède 10 entreprises en même temps.",p:()=>[Object.keys(S.pos).length,10]},
+ {id:"sec3",cat:"Construire son portefeuille",ic:"🏭",t:"Multi-secteurs",d:"Investis dans 3 secteurs différents.",p:()=>[new Set(Object.keys(S.pos).map(sec)).size,3]},
+ {id:"intl",cat:"Construire son portefeuille",ic:"✈️",t:"Citoyen du monde",d:"Possède une entreprise internationale.",p:()=>[Object.keys(S.pos).some(k=>sec(k).startsWith("International"))?1:0,1]},
+ {id:"allin",cat:"Construire son portefeuille",ic:"🔥",t:"Pleinement investi",d:"Investis au moins 80 % de ta fortune.",u:"%",p:()=>[total()>0?holdings()/total()*100:0,80]},
+ {id:"big",cat:"Construire son portefeuille",ic:"💪",t:"Gros coup",d:"Fais un achat d'au moins 100 €.",u:"€",p:()=>[Math.max(0,...buys().map(h=>h.amt)),100]},
+ {id:"g10",cat:"Faire fructifier",ic:"💰",t:"+10 %",d:"Atteins 10 % de gain sur ta mise de départ.",u:"%",p:()=>[gainPct(),10]},
+ {id:"g25",cat:"Faire fructifier",ic:"🚀",t:"+25 %",d:"Atteins 25 % de gain.",u:"%",p:()=>[gainPct(),25]},
+ {id:"g50",cat:"Faire fructifier",ic:"🏔️",t:"+50 %",d:"Atteins 50 % de gain.",u:"%",p:()=>[gainPct(),50]},
+ {id:"g100",cat:"Faire fructifier",ic:"💎",t:"Mise doublée",d:"Double ta mise de départ.",u:"%",p:()=>[gainPct(),100]},
+ {id:"win",cat:"Faire fructifier",ic:"✅",t:"Vente gagnante",d:"Vends une position avec un bénéfice.",p:()=>[sells().filter(h=>h.pnl>0).length,1]},
+ {id:"cash25",cat:"Faire fructifier",ic:"🏦",t:"Bénéfices encaissés",d:"Encaisse 25 € de bénéfices cumulés en vendant.",u:"€",p:()=>[sells().reduce((a,h)=>a+(h.pnl>0?h.pnl:0),0),25]},
+ {id:"ops10",cat:"Devenir un pro",ic:"🧾",t:"Trader actif",d:"Fais 10 opérations (achats et ventes).",p:()=>[S.hist.length,10]},
+ {id:"ops30",cat:"Devenir un pro",ic:"📚",t:"Habitué",d:"Fais 30 opérations.",p:()=>[S.hist.length,30]},
+ {id:"order",cat:"Devenir un pro",ic:"🎯",t:"Stratège",d:"Fais exécuter un ordre à seuil.",p:()=>[S.hist.filter(h=>h.auto).length,1]},
+ {id:"hold",cat:"Devenir un pro",ic:"🧘",t:"Patience",d:"Garde la même action plus de 24 heures.",p:()=>[holdOk()?1:0,1]}
+];
+const LEVELS=[[0,"Débutant"],[3,"Apprenti"],[7,"Investisseur"],[12,"Expert"],[17,"Stratège"],[23,"Légende"]];
+function levelOf(n){let i=0;LEVELS.forEach((l,k)=>{if(n>=l[0])i=k});return{n:i+1,name:LEVELS[i][1],next:LEVELS[i+1]}}
+function checkGoals(silent){
+  let changed=false;
+  for(const g of GOALS){if(S.ach[g.id])continue;const[c,t]=g.p();if(c>=t){S.ach[g.id]=Date.now();changed=true;if(!silent)notify("🏆 Objectif débloqué : "+g.t)}}
+  if(changed){const lv=levelOf(Object.keys(S.ach).length);if(!silent)notify("Niveau "+lv.n+" · "+lv.name);setWho();saveSoon()}
+}
+function setWho(){
+  const el=document.getElementById("who");if(!el||!PROFILE)return;const lv=levelOf(GOALS.filter(g=>S.ach[g.id]).length);
+  el.innerHTML=`<span class="wavs1">${(users()[PROFILE]||{}).av||"👤"}</span><div><b>${esc(PROFILE)}</b><small>Niveau ${lv.n} · ${lv.name}</small></div>`;
+}
+function goalCard(g){
+  const done=!!S.ach[g.id],[c,t]=g.p(),pc=Math.round(Math.min(1,c/t)*100);
+  const f=v=>g.u==="€"?eur(v):g.u==="%"?v.toFixed(1).replace(".",",")+" %":String(Math.floor(v));
+  const tt=g.u==="€"?eur(t):g.u==="%"?t+" %":t;
+  return`<div class="card goal ${done?"done":""}"><div class="gi">${g.ic}</div><div class="gb"><b>${g.t}</b>${done?'<span class="gok">Débloqué</span>':""}<p>${g.d}</p>${done?`<small>le ${new Date(S.ach[g.id]).toLocaleDateString("fr-FR")}</small>`:`<div class="pbar"><i style="width:${pc}%"></i></div><small>${f(c)} sur ${tt}</small>`}</div></div>`;
+}
+function goalsView(){
+  const done=GOALS.filter(g=>S.ach[g.id]).length,N=GOALS.length,lv=levelOf(done),nx=lv.next;
+  const head=`<div class="card lvl"><div class="lvlbig">${lv.n}</div><div style="flex:1"><h3 style="margin:0;font-size:18px">${lv.name}</h3><p style="margin:2px 0 10px;color:var(--mute);font-size:13.5px">${done} objectif${done>1?"s":""} débloqué${done>1?"s":""} sur ${N}${nx?" · encore "+(nx[0]-done)+" pour devenir "+nx[1]:" · tu as tout débloqué, bravo !"}</p><div class="pbar"><i style="width:${Math.round(done/N*100)}%"></i></div></div></div>`;
+  const cats=[...new Set(GOALS.map(g=>g.cat))];
+  return`<h2>Objectifs</h2>${head}${cats.map(c=>`<h3 class="gcat">${c}</h3><div class="grid goals">${GOALS.filter(g=>g.cat===c).map(goalCard).join("")}</div>`).join("")}`;
+}
+let GP={part:0,page:0};
+const m_top=()=>{const m=document.getElementById("main");if(m)m.scrollTop=0};
+function guideMark(){const k=GP.part+"-"+GP.page;if(!S.read[k]){S.read[k]=1;checkGoals();saveSoon()}}
+function guideView(){
+  const P=GUIDE[GP.part],pg=P.pages[GP.page],last=GP.page===P.pages.length-1,first=GP.page===0,end=last&&GP.part===GUIDE.length-1;
+  const tabs=GUIDE.map((p,i)=>`<button class="btab ${i===GP.part?"on":""}" data-gpart="${i}">${p.ic} Partie ${i+1} · ${p.title}</button>`).join("");
+  const toc=P.pages.map((x,i)=>`<button class="${i===GP.page?"on":""} ${S.read[GP.part+"-"+i]?"read":""}" data-gpage="${i}">${i+1}. ${x.t}</button>`).join("");
+  return`<h2>Livret du jeu</h2><div class="btabs">${tabs}</div><div class="book"><nav class="btoc" aria-label="Sommaire">${toc}</nav><article><div class="bpage"><div class="bn">Partie ${GP.part+1} · page ${GP.page+1} sur ${P.pages.length}</div><h3>${pg.t}</h3>${pg.b}</div><div class="bfoot"><button class="btn" data-gnav="prev" ${first&&GP.part===0?"disabled":""} style="background:var(--mute)">Page précédente</button><button class="btn" data-gnav="next" ${end?"disabled":""}>${last&&!end?"Partie suivante":"Page suivante"}</button></div></article></div>`;
+}
+const GUIDE=[
+{title:"Comment fonctionne le jeu",ic:"🎮",pages:[
+{t:"Le but du jeu",b:`<p>Tu démarres avec <strong>250 € virtuels</strong>. Ton objectif : les faire fructifier en achetant et en revendant des actions d'entreprises cotées en bourse.</p>
+<p>L'argent est fictif, donc <strong>tu ne risques rien</strong>. Les prix, eux, sont ceux de la vraie bourse quand les vrais cours sont activés.</p>
+<p>Ta fortune, c'est l'argent qu'il te reste <strong>plus</strong> la valeur de tes actions. Tu gagnes quand elle dépasse ton capital de départ.</p>
+<div class="gtip"><strong>À retenir :</strong> c'est un jeu pour apprendre. Ce n'est pas un conseil en investissement.</div>`},
+{t:"Ton personnage et le menu",b:`<p>Au démarrage, tu crées un <strong>personnage</strong> : un pseudo, un mot de passe et un avatar. Il est enregistré sur ton appareil, pas en ligne. Chaque personnage a son propre compte.</p>
+<ul><li><strong>Vue générale</strong> : ta fortune, ton graphique, tes objectifs et le classement des personnages.</li><li><strong>Portefeuille</strong> : tes actions, tes gains, ton historique.</li><li><strong>Marchés</strong> : toutes les entreprises à acheter.</li><li><strong>Objectifs</strong> et <strong>Guide</strong> : ce livret.</li></ul>
+<p>Le <strong>bandeau défilant</strong> en haut montre les cours (passe la souris dessus pour le mettre en pause). En bas du menu : changer de personnage, thème clair ou sombre, export de l'historique en fichier Excel (CSV) et remise à zéro (retour à 250 €).</p>
+<div class="gtip"><strong>Mot de passe oublié ?</strong> Il ne peut pas être récupéré : depuis l'écran de connexion, tu peux supprimer le personnage et en créer un nouveau.</div>`},
+{t:"D'où viennent les cours",b:`<p>Dans le menu, une pastille indique l'état des prix :</p>
+<ul><li><strong>Cours réels</strong> : les vrais prix de la bourse. L'appli essaie d'abord Yahoo Finance sans clé, puis Twelve Data si tu as ajouté une clé gratuite (bouton 🔑).</li><li><strong>Cours simulés</strong> : des prix inventés qui bougent au hasard. Pratique pour jouer, mais sans vraies courbes ni actualités.</li></ul>
+<p>Les cours se chargent <strong>petit à petit</strong> (limites gratuites des sites). Un « — » veut dire que le cours n'est pas encore arrivé : l'achat est bloqué jusqu'à son chargement. Ouvrir une entreprise charge son cours tout de suite.</p>
+<p>Les prix sont convertis en <strong>euros</strong> avec le taux du jour. La bourse américaine est ouverte en général de <strong>15 h 30 à 22 h</strong> (heure de Paris), du lundi au vendredi. En dehors, le cours reste celui de la dernière clôture.</p>`},
+{t:"Acheter et vendre",b:`<p>Dans <strong>Marchés</strong>, choisis une entreprise, écris un montant en euros puis clique sur <strong>Acheter</strong>. Tu peux acheter une <strong>fraction d'action</strong> : avec 10 €, tu en achètes juste ce que 10 € permettent.</p>
+<p>Chaque achat et chaque vente coûte <strong>0,2 % de frais</strong>, comme chez un courtier. Le <strong>prix moyen</strong> de ta position est la moyenne de tes achats.</p>
+<p>Pour vendre, utilise <strong>Vendre</strong> dans le Portefeuille ou <strong>Vendre tout</strong> dans la fiche de l'entreprise. L'argent revient dans ton capital disponible.</p>
+<div class="gex"><strong>Exemple :</strong> tu achètes 50 € d'une action qui vaut 100 €. Les frais sont de 0,10 €, donc tu reçois 49,90 / 100 = <strong>0,499 action</strong>.</div>`},
+{t:"La fiche d'une entreprise",b:`<p>Clique sur une carte pour ouvrir sa fiche :</p>
+<ul><li>le <strong>prix</strong> et sa variation par rapport à la clôture précédente ;</li><li>la <strong>courbe</strong>, avec des périodes de 1 h à 1 an ;</li><li>des <strong>infos</strong> : ouverture, plus haut et plus bas du jour, volume, repères sur 52 semaines ;</li><li>l'<strong>achat</strong>, la <strong>vente</strong> et les <strong>ordres à seuil</strong> ;</li><li>les <strong>actualités récentes</strong> trouvées sur Internet, avec une pastille verte ou rouge. Ce classement est indicatif : il repose sur des mots du titre.</li></ul>
+<p>Dans Marchés, l'étoile ★ met une entreprise en favori (elle passe en premier). Tu peux aussi chercher par nom, filtrer par secteur, trier, et cliquer sur « Afficher plus ».</p>`},
+{t:"Les ordres à seuil",b:`<p>Un ordre à seuil achète ou vend <strong>à ta place</strong> quand le prix atteint le niveau que tu as choisi.</p>
+<ul><li><strong>Acheter si prix ≤</strong> : dès que le prix descend jusqu'au seuil, l'appli achète le montant indiqué.</li><li><strong>Vendre si prix ≥</strong> : dès que le prix monte jusqu'au seuil, l'appli vend toute ta position.</li></ul>
+<p>Les ordres ne fonctionnent que <strong>tant que l'appli est ouverte</strong>. Tu les retrouves dans Portefeuille, « Ordres en attente », et tu peux les annuler. L'ordre s'exécute au prix du moment, qui peut être un peu différent du seuil.</p>`},
+{t:"Suivre ton portefeuille",b:`<p>La page <strong>Portefeuille</strong> te dit où tu en es :</p>
+<ul><li><strong>Capital disponible</strong> : l'argent pas encore investi.</li><li><strong>Valeur du portefeuille</strong> : argent + valeur de tes actions.</li><li><strong>Argent investi</strong> : ce que tes actions t'ont coûté.</li><li><strong>Gains et pertes</strong> : en euros et en pourcentage par rapport à ta mise de départ.</li></ul>
+<p>Tu y trouves aussi le graphique de ton compte, la répartition en camembert, le tableau de tes actions, le classement de tes meilleurs et pires placements et l'historique de toutes tes opérations.</p>`},
+{t:"Objectifs et niveaux",b:`<p>Le jeu propose <strong>23 objectifs</strong> répartis en quatre familles : pour bien démarrer, construire son portefeuille, faire fructifier, devenir un pro.</p>
+<p>Chaque objectif débloqué te fait gagner des niveaux, de <strong>Débutant</strong> à <strong>Légende</strong>. Une notification apparaît à chaque déblocage, et ton niveau est affiché dans le menu.</p>
+<p>Lire tout ce livret est aussi un objectif.</p>`},
+{t:"Bon à savoir",b:`<ul><li>Tes données sont <strong>sauvegardées dans ce navigateur</strong>. Si tu effaces les données du site, elles disparaissent : pense à exporter ton historique.</li><li>Les sites gratuits limitent le nombre de demandes : si les cours tardent, patiente un peu.</li><li>Si les cours réels sont bloqués, l'appli passe en cours simulés et le dit clairement dans le menu.</li><li>Les actualités viennent de sites publics : si aucune source ne répond, des liens directs sont proposés.</li></ul>
+<div class="gtip"><strong>Rappel :</strong> ce simulateur est un outil d'apprentissage. Il ne donne aucun conseil financier.</div>`}
+]},
+{title:"Les bases de la bourse",ic:"📚",pages:[
+{t:"Qu'est-ce qu'une action ?",b:`<p>Une <strong>action</strong> est une petite part de propriété d'une entreprise. Si une société est divisée en un million d'actions et que tu en détiens une, tu possèdes un millionième de l'entreprise.</p>
+<p>Les entreprises émettent des actions pour trouver l'argent dont elles ont besoin pour se développer. En retour, un actionnaire peut gagner de deux façons :</p>
+<ul><li>la <strong>plus-value</strong> : revendre l'action plus cher qu'on l'a payée ;</li><li>le <strong>dividende</strong> : une part des bénéfices que certaines entreprises versent à leurs actionnaires (pas toutes).</li></ul>
+<div class="gtip"><strong>Attention :</strong> si le cours baisse, ta part vaut moins. Si l'entreprise fait faillite, l'action peut perdre toute sa valeur.</div>`},
+{t:"La bourse et les indices",b:`<p>La <strong>bourse</strong> est un marché organisé où acheteurs et vendeurs se rencontrent. Le prix d'une action, le <strong>cours</strong>, résulte de l'<strong>offre et de la demande</strong> : s'il y a plus d'acheteurs que de vendeurs, il monte ; dans le cas inverse, il baisse.</p>
+<p>Les grandes places sont New York (NYSE et Nasdaq), Paris (Euronext), Londres, Tokyo… Ce simulateur propose des entreprises cotées aux États-Unis, y compris des entreprises étrangères qui y sont cotées.</p>
+<p>Un <strong>indice</strong> est un panier d'entreprises qui résume l'état d'un marché : le <strong>S&amp;P 500</strong> (500 grandes entreprises américaines), le <strong>CAC 40</strong> (40 grandes entreprises françaises), le <strong>Nasdaq 100</strong> (grandes entreprises du Nasdaq, souvent technologiques).</p>
+<p>La bourse de New York est ouverte de 9 h 30 à 16 h, heure locale, soit en général de 15 h 30 à 22 h à Paris.</p>`},
+{t:"Pourquoi un cours bouge",b:`<p>Le cours change en permanence parce que les investisseurs révisent leur avis sur l'<strong>avenir</strong> de l'entreprise. Les principales causes :</p>
+<ul><li>les <strong>résultats</strong> (chiffre d'affaires, bénéfices), comparés à ce que le marché attendait ;</li><li>les <strong>nouvelles</strong> : nouveau produit, procès, changement de dirigeant, accord ;</li><li>l'<strong>économie</strong> : inflation, croissance, décisions des banques centrales. Quand les taux d'intérêt montent, les actions peuvent souffrir ;</li><li>le <strong>secteur</strong> : une bonne ou mauvaise nouvelle touche souvent toutes les entreprises du même domaine ;</li><li>l'<strong>humeur</strong> des investisseurs : peur ou enthousiasme.</li></ul>
+<p>Le marché regarde devant lui : une bonne nouvelle déjà anticipée peut ne pas faire monter le cours. La <strong>volatilité</strong> mesure l'ampleur de ces variations.</p>
+<div class="gtip"><strong>À retenir :</strong> un cours qui monte ne prouve pas que l'entreprise est excellente, et un cours qui baisse ne prouve pas l'inverse.</div>`},
+{t:"Lire une fiche",b:`<p>Quelques repères que tu retrouves dans la fiche de chaque entreprise :</p>
+<ul><li><strong>Clôture précédente</strong> : le dernier cours de la séance d'avant. La variation en % se calcule par rapport à lui.</li><li><strong>Ouverture</strong> : le premier cours du jour.</li><li><strong>Plus haut / plus bas du jour</strong> : les extrêmes de la séance.</li><li><strong>Volume</strong> : le nombre d'actions échangées. Un volume élevé indique beaucoup d'intérêt.</li><li><strong>52 semaines</strong> : le cours le plus bas et le plus haut de l'année écoulée. Ils montrent où se situe le cours actuel dans sa fourchette habituelle.</li></ul>`},
+{t:"Gains, pertes et frais",b:`<p>Tant que tu n'as pas vendu, un gain ou une perte est <strong>latent</strong> : il existe sur le papier mais peut encore changer. Il devient <strong>réalisé</strong> quand tu vends.</p>
+<div class="gex"><strong>Exemple (frais de 0,2 %) :</strong> tu achètes pour 100 €. Après 0,20 € de frais, 99,80 € sont investis. Le cours monte de 10 % : ta position vaut 109,78 €. À la vente, 0,22 € de frais : tu reçois environ <strong>109,56 €</strong>, soit un gain d'environ 9,56 € et non 10 €.</div>
+<p>Les frais paraissent petits, mais ils s'additionnent quand on achète et vend souvent.</p>
+<div class="gtip"><strong>Une règle importante :</strong> après une baisse de 50 %, il faut une hausse de <strong>100 %</strong> pour revenir au point de départ. Limiter les grosses pertes compte autant que chercher les gains.</div>`},
+{t:"Risque et diversification",b:`<p>Investir comporte un <strong>risque de perte</strong>. En général, plus un placement peut rapporter, plus il est risqué.</p>
+<p>Mettre tout son argent sur une seule entreprise, c'est tout miser sur elle. La <strong>diversification</strong> consiste à répartir : plusieurs entreprises, plusieurs <strong>secteurs</strong> (technologie, santé, énergie…), plusieurs pays.</p>
+<p>Elle réduit le risque lié à une entreprise, mais ne supprime pas celui du marché entier, qui peut baisser en bloc.</p>
+<div class="gtip"><strong>En vrai :</strong> on n'investit que de l'argent dont on n'aura pas besoin à court terme.</div>`},
+{t:"Les types d'ordres",b:`<p>Un <strong>ordre</strong> est une instruction donnée à un courtier pour acheter ou vendre.</p>
+<ul><li>L'<strong>ordre au marché</strong> : acheter ou vendre tout de suite au prix disponible. C'est ce que font les boutons Acheter et Vendre du jeu.</li><li>L'<strong>ordre limite</strong> : tu fixes le prix maximum d'achat ou minimum de vente, et l'ordre n'est exécuté que s'il est atteint. Les ordres à seuil du jeu s'en inspirent.</li><li>L'<strong>ordre stop</strong> : il vend automatiquement si le prix descend jusqu'à un niveau, pour limiter une perte. Le jeu ne le propose pas, mais il existe chez les courtiers.</li></ul>`},
+{t:"Court terme, long terme",b:`<p>À court terme, les cours bougent beaucoup pour des raisons difficiles à prévoir : c'est du « bruit ». Essayer de deviner chaque mouvement ressemble souvent à de la spéculation.</p>
+<p>À long terme, les marchés d'actions ont historiquement eu tendance à progresser, avec des baisses parfois fortes entre-temps. <strong>Ce n'est pas une garantie.</strong></p>
+<ul><li>La <strong>patience</strong> aide à ne pas vendre dans la panique.</li><li>Investir <strong>régulièrement</strong> de petites sommes lisse le prix d'achat.</li><li>Les <strong>émotions</strong> (peur, euphorie) sont l'ennemi numéro un de l'investisseur.</li></ul>`},
+{t:"Mini-lexique",b:`<ul><li><strong>Action</strong> : part d'une entreprise.</li><li><strong>Dividende</strong> : part des bénéfices versée aux actionnaires.</li><li><strong>Plus-value / moins-value</strong> : gain / perte en vendant.</li><li><strong>Indice</strong> : panier d'entreprises qui résume un marché.</li><li><strong>Volatilité</strong> : ampleur des variations d'un cours.</li><li><strong>Capitalisation boursière</strong> : valeur totale d'une entreprise en bourse (cours × nombre d'actions).</li><li><strong>PER</strong> : cours divisé par le bénéfice par action ; il indique combien on paie pour 1 € de bénéfice.</li><li><strong>ETF</strong> : fonds coté en bourse qui suit un indice.</li><li><strong>Marché haussier / baissier</strong> : période durable de hausse / de baisse.</li><li><strong>Liquidité</strong> : facilité à acheter ou vendre sans bouger le prix.</li><li><strong>Courtier</strong> : intermédiaire qui passe tes ordres en bourse.</li><li><strong>ADR</strong> : titre qui permet de coter aux États-Unis une entreprise étrangère.</li></ul>`},
+{t:"Bons réflexes et pièges",b:`<ul><li>Comprends <strong>ce que fait l'entreprise</strong> avant d'acheter.</li><li>Lis les résultats et les actualités, avec un œil critique.</li><li>Méfie-toi des « <strong>conseils</strong> » sur les réseaux sociaux et des promesses de gains garantis : aucun gain n'est garanti.</li><li>Ne <strong>t'endette jamais</strong> pour investir quand on débute.</li><li>Garde une <strong>épargne de précaution</strong> à part.</li></ul>
+<p>En France, on investit en bourse via une banque ou un courtier en ligne, par exemple dans un <strong>PEA</strong> ou un <strong>compte-titres</strong>, qui n'ont pas la même fiscalité : renseigne-toi avant de te lancer pour de vrai.</p>
+<div class="gtip"><strong>Rappel :</strong> ce livret est éducatif et ne constitue pas un conseil en investissement.</div>`}
+]}];
+let tapeKey="",T0=Date.now();
+function drawTape(force){
+  const el=document.getElementById("tape");if(!el||!LOGGED)return;
+  const ks=Object.keys(STOCKS).filter(k=>!S.source||(S.pt&&S.pt[k])).slice(0,40);
+  const key=ks.join(",")+"|"+Math.floor(Date.now()/60000);if(!force&&key===tapeKey)return;tapeKey=key;
+  if(!ks.length){el.innerHTML='<div class="tapeempty">Connexion aux cours en cours…</div>';return}
+  const item=k=>{const d=(S.prices[k]/S.open[k]-1)*100;return`<span class="ti"><b>${k}</b>${eur(S.prices[k])}<i class="${cls(d)}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(2).replace(".",",")} %</i></span>`};
+  const html=ks.map(item).join(""),dur=Math.max(60,ks.length*5),delay=-(((Date.now()-T0)/1000)%dur);
+  el.innerHTML=`<div class="tapetrack" style="animation-duration:${dur}s;animation-delay:${delay.toFixed(1)}s">${html}${html}</div>`;
+}
+function goalsSummary(){
+  const done=GOALS.filter(g=>S.ach[g.id]).length,N=GOALS.length,lv=levelOf(done);
+  const open=GOALS.filter(g=>!S.ach[g.id]).map(g=>{const[c,t]=g.p();return[g,Math.min(1,c/t)]}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  return`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><b>Niveau ${lv.n} · ${lv.name}</b><span style="color:var(--mute);font-size:13px">${done} sur ${N} débloqués</span></div><div class="pbar" style="margin:8px 0 14px"><i style="width:${Math.round(done/N*100)}%"></i></div>${open.map(([g,r])=>`<div class="grow"><span>${g.ic} ${g.t}</span><div class="pbar sm"><i style="width:${Math.round(r*100)}%"></i></div></div>`).join("")}<button class="btn" data-goto="goals" style="margin-top:12px">Voir tous les objectifs</button>`;
+}
+function ranking(){
+  const e=Object.entries(S.pos).map(([k,p])=>[k,(S.prices[k]/p.avg-1)*100]).sort((a,b)=>b[1]-a[1]);
+  if(!e.length)return'<div class="empty">Achète des actions pour voir ton classement.</div>';
+  return`<table>${e.map(([k,g],i)=>`<tr><td>${i+1}. ${logo(k)}${STOCKS[k][0]}</td><td class="${cls(g)}">${pct(g)}</td></tr>`).join("")}</table>`;
+}
+function ordersHtml(){
+  if(!S.orders.length)return'<div class="empty">Aucun ordre en attente. Ouvre une entreprise dans « Marchés » pour en créer un.</div>';
+  return`<div class="scroll"><table>${S.orders.map((o,i)=>`<tr><td>${logo(o.sym)}${STOCKS[o.sym][0]}</td><td>${o.type==="buy"?"Acheter "+eur(o.amt)+" si le prix ≤":"Vendre tout si le prix ≥"} ${eur(o.price)}</td><td>Cours : ${eur(S.prices[o.sym])}</td><td><button class="btn sell" data-cancel="${i}">Annuler</button></td></tr>`).join("")}</table></div>`;
+}
+function board(){
+  const U=users(),rows=[];
+  for(const n of Object.keys(U)){try{const x=n===PROFILE?S:JSON.parse(localStorage.getItem(KEYP+n));if(x)rows.push([n,x.cash+Object.entries(x.pos||{}).reduce((a,[q,p])=>a+p.qty*((x.prices||{})[q]||0),0),U[n].av,x.start||100])}catch(e){}}
+  rows.sort((a,b)=>b[1]-a[1]);
+  return`<table>${rows.map((r,i)=>`<tr><td>${i+1}. ${r[2]||""} ${esc(r[0])}${r[0]===PROFILE?" (toi)":""}</td><td>${eur(r[1])}</td><td class="${cls(r[1]-r[3])}">${pct((r[1]/r[3]-1)*100)}</td></tr>`).join("")}</table><p style="font-size:12.5px;color:var(--mute);margin:8px 0 0">Pour ajouter un joueur, clique sur « Changer de personnage » dans le menu.</p>`;
+}
+async function loadHist(k,r){
+  const key=k+"|"+r,e=HIST[key];
+  if(e&&(e.loading||Date.now()-e.ts<(e.err?60000:600000)))return;
+  const rg=RANGES.find(x=>x[0]===r),prev=e&&e.pts;HIST[key]={loading:true,pts:prev,ts:Date.now()};
+  try{
+    const rangeMap={3600:["1d","1m"],86400:["1d","5m"],604800:["5d","30m"],2592000:["1mo","1d"],15552000:["6mo","1d"],31536000:["1y","1d"]};
+    const [yr,yi]=rangeMap[r]||["1mo","1d"];let root,pts;
+    try{
+      await getRate();if(yahooErr&&APIKEY)throw new Error("Yahoo indisponible");root=await yahooChart(k,yr,yi);const q=((root.indicators||{}).quote||[])[0]||{},ts=root.timestamp||[],cl=q.close||[];
+      pts=ts.map((t,i)=>[t,+cl[i]*rate]).filter(p=>p[1]>0);if(r===3600)pts=pts.slice(-60);
+      if(pts.length>1){HIST[key]={pts,ts:Date.now(),source:"Yahoo Finance"};}
+      else throw new Error("historique Yahoo incomplet");
+    }catch(yerr){
+      if(!APIKEY)throw yerr;
+      await getRate();const j=await tdGet("time_series","symbol="+encodeURIComponent(k)+"&interval="+rg[2]+"&outputsize="+rg[3],1);
+      if(j.status==="error"||!j.values)throw new Error(j.message||String(yerr.message||yerr));
+      pts=j.values.map(v=>[Math.floor(Date.parse(v.datetime.replace(" ","T"))/1000),+v.close*rate]).filter(p=>p[1]>0).reverse();
+      HIST[key]={pts,ts:Date.now(),source:"Twelve Data"};
+    }
+  }catch(err){HIST[key]={err:String(err.message||err).slice(0,100),ts:Date.now(),pts:prev}}
+  if(openSym===k&&MR===r){const el=document.getElementById("mchart");if(el)el.innerHTML=chartFor(k)}
+}
+function chartFor(k){
+  if(!S.source&&!APIKEY)return'<div class="empty">Tentative de chargement de la courbe Yahoo Finance. Si le navigateur bloque la connexion, ajoute une clé Twelve Data avec le bouton « 🔑 ».</div>';
+  loadHist(k,MR);const e=HIST[k+"|"+MR]||{};
+  if(e.pts&&e.pts.length>1){const rg=RANGES.find(x=>x[0]===MR);return pathChart(e.pts)+`<div style="font-size:12px;color:var(--mute)">${rg[2]==="1day"?"Clôtures quotidiennes":"Heure de marché"} · données ${esc(e.source||S.source||"de marché")}</div>`}
+  if(e.err)return'<div class="empty">Courbe indisponible : '+esc(e.err)+'</div>';
+  return'<div class="empty">Chargement de la courbe…</div>';
+}
+function pathChart(pts){
+  const n=pts.length;if(n<2)return'<div class="empty">Pas assez de données pour cette période.</div>';
+  const W=640,H=230,L=46,R=10,T=14,B=26,vs=pts.map(p=>p[1]);let mn=Math.min(...vs),mx=Math.max(...vs);if(mx-mn<.005){mn-=.5;mx+=.5}
+  const X=i=>L+i/(n-1)*(W-L-R),y=v=>H-B-(v-mn)/(mx-mn)*(H-B-T),a=pts[0][0],b=pts[n-1][0],ch=(vs[n-1]/vs[0]-1)*100,c=ch>=0?"var(--up)":"var(--down)";
+  const fmt=t=>{const z=new Date(t*1000),h=z.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}),dd=z.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:b-a>200*86400?"2-digit":undefined});return b-a>5*86400?dd:b-a>86400?dd+" "+h:h};
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Évolution du cours"><line x1="${L}" x2="${W-R}" y1="${y(mx)}" y2="${y(mx)}" stroke="var(--line)"/><line x1="${L}" x2="${W-R}" y1="${y(mn)}" y2="${y(mn)}" stroke="var(--line)"/><text x="2" y="${y(mx)+4}" font-size="10" fill="var(--mute)">${mx.toFixed(2)}</text><text x="2" y="${y(mn)+4}" font-size="10" fill="var(--mute)">${mn.toFixed(2)}</text><text x="${L}" y="${H-8}" font-size="10" fill="var(--mute)">${fmt(a)}</text><text x="${W-R}" y="${H-8}" font-size="10" text-anchor="end" fill="var(--mute)">${fmt(b)}</text><polyline points="${pts.map((p,i)=>X(i).toFixed(1)+","+y(p[1]).toFixed(1)).join(" ")}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(n-1).toFixed(1)}" cy="${y(vs[n-1])}" r="3.5" fill="${c}"/></svg><div class="${cls(ch)}" style="font-size:13px">Sur cette période : ${pct(ch)} · plus bas ${eur(Math.min(...vs))} · plus haut ${eur(Math.max(...vs))}</div>`;
+}
+const COMPANY_FR={
+ AAPL:"Apple conçoit des smartphones (iPhone), des ordinateurs Mac, des tablettes iPad et des services numériques.",
+ MSFT:"Microsoft développe Windows, Microsoft 365, Azure et des logiciels et services d’intelligence artificielle.",
+ NVDA:"NVIDIA conçoit des processeurs graphiques et des puces utilisées pour les jeux vidéo, les centres de données et l’intelligence artificielle.",
+ TSLA:"Tesla fabrique des véhicules électriques, des batteries et des solutions de stockage d’énergie.",
+ AMZN:"Amazon est une plateforme de commerce en ligne et fournit des services informatiques à distance avec AWS.",
+ GOOGL:"Alphabet est la société mère de Google, dont les activités incluent la recherche en ligne, la publicité, YouTube et le cloud.",
+ META:"Meta possède notamment Facebook, Instagram et WhatsApp, et investit aussi dans la réalité virtuelle et l’intelligence artificielle.",
+ NFLX:"Netflix propose un service de diffusion de films, séries et documentaires par abonnement.",
+ AMD:"AMD conçoit des processeurs et des puces graphiques pour ordinateurs, serveurs et consoles.",
+ ORCL:"Oracle fournit des bases de données, des logiciels d’entreprise et des services cloud.",
+ ADBE:"Adobe développe des logiciels de création, de conception et de documents numériques, dont Photoshop et Acrobat.",
+ CRM:"Salesforce fournit des logiciels de gestion de la relation client (CRM) et des outils cloud pour les entreprises.",
+ IBM:"IBM propose des services informatiques, des logiciels, du conseil, des solutions cloud et d’intelligence artificielle.",
+ CSCO:"Cisco fournit des équipements réseau, des solutions de cybersécurité et des outils de communication.",
+ QCOM:"Qualcomm conçoit des semi-conducteurs et des technologies de communication mobile, notamment autour de la 5G.",
+ UBER:"Uber exploite une plateforme de réservation de trajets et de livraison de repas.",
+ DIS:"Disney est un groupe de divertissement actif dans le cinéma, la télévision, les parcs à thème et le streaming.",
+ KO:"Coca-Cola produit et commercialise des boissons, notamment des sodas et des boissons sans alcool.",
+ PEP:"PepsiCo vend des boissons et des produits alimentaires, dont Pepsi et les snacks Lay’s.",
+ MCD:"McDonald’s est une chaîne internationale de restauration rapide.",
+ WMT:"Walmart exploite des magasins et une plateforme de vente en ligne axés sur la grande distribution.",
+ COST:"Costco exploite des magasins-entrepôts proposant des produits en gros à ses membres.",
+ JPM:"JPMorgan Chase est un groupe bancaire proposant des services aux particuliers, aux entreprises et aux investisseurs.",
+ V:"Visa exploite un réseau mondial de paiements électroniques et ne constitue pas elle-même une banque émettrice de cartes.",
+ MA:"Mastercard exploite un réseau mondial de paiements électroniques.",
+ XOM:"ExxonMobil est un groupe énergétique actif dans le pétrole, le gaz et les produits chimiques.",
+ JNJ:"Johnson & Johnson développe des médicaments et des dispositifs médicaux.",
+ HD:"Home Depot distribue des produits et matériaux pour la rénovation, la construction et l’aménagement de la maison.",
+ PLTR:"Palantir développe des plateformes logicielles d’analyse et d’exploitation de données pour les organisations.",
+ SHOP:"Shopify fournit des outils permettant aux entreprises de créer et gérer leur boutique en ligne.",
+ PANW:"Palo Alto Networks fournit des solutions de cybersécurité pour les réseaux, le cloud et les appareils.",
+ NOW:"ServiceNow développe des logiciels qui automatisent les processus et les services informatiques des organisations.",
+ INTU:"Intuit développe des logiciels de comptabilité, de fiscalité et de gestion financière, dont QuickBooks et TurboTax.",
+ TXN:"Texas Instruments conçoit des semi-conducteurs, notamment des composants analogiques et des processeurs embarqués.",
+ MU:"Micron fabrique des puces mémoire et des solutions de stockage de données.",
+ AVGO:"Broadcom conçoit des semi-conducteurs et des logiciels d’infrastructure.",
+ PG:"Procter & Gamble commercialise des produits de consommation courante, notamment d’hygiène, de beauté et d’entretien.",
+ BAC:"Bank of America est un groupe bancaire américain proposant des services financiers aux particuliers et aux entreprises.",
+ GS:"Goldman Sachs est une banque d’investissement et un groupe de services financiers.",
+ MS:"Morgan Stanley fournit des services de banque d’investissement, de gestion de patrimoine et de gestion d’actifs.",
+ AXP:"American Express fournit des cartes de paiement et des services de paiement et de voyage.",
+ BLK:"BlackRock est un gestionnaire d’actifs et de fonds d’investissement.",
+ LLY:"Eli Lilly est un laboratoire pharmaceutique qui développe des médicaments, notamment dans les domaines du diabète et de l’obésité.",
+ MRK:"Merck, appelé MSD dans certains pays, est un groupe pharmaceutique et de santé.",
+ ABBV:"AbbVie est un laboratoire biopharmaceutique développant des traitements pour plusieurs maladies.",
+ UNH:"UnitedHealth Group regroupe des activités d’assurance santé et de services de santé aux États-Unis.",
+ CVX:"Chevron est un groupe énergétique actif dans le pétrole, le gaz et les activités associées.",
+ GE:"GE Aerospace développe et entretient des moteurs et systèmes pour l’aviation.",
+ CAT:"Caterpillar fabrique des engins de chantier, des équipements miniers et des moteurs industriels.",
+ LMT:"Lockheed Martin est un groupe de défense et d’aérospatiale qui fabrique notamment des avions et des systèmes de défense.",
+ AMAT:"Applied Materials fournit des équipements utilisés pour fabriquer des semi-conducteurs et des écrans.",
+ LRCX:"Lam Research fabrique des équipements de traitement utilisés dans la production de semi-conducteurs.",
+ KLAC:"KLA fournit des équipements de contrôle, d’inspection et de mesure pour la fabrication de semi-conducteurs.",
+ ARM:"Arm conçoit des architectures de processeurs utilisées dans de nombreux appareils électroniques.",
+ BKNG:"Booking Holdings exploite des plateformes de réservation de voyages et d’hébergements, dont Booking.com.",
+ PM:"Philip Morris International commercialise des produits du tabac et des produits sans fumée.",
+ SPGI:"S&P Global fournit des notations de crédit, des indices de marché et des données financières.",
+ COIN:"Coinbase exploite une plateforme de services et d’échange de crypto-actifs.",
+ TMO:"Thermo Fisher Scientific fournit des instruments, des réactifs et des services pour la recherche et les laboratoires.",
+ ABT:"Abbott développe des dispositifs médicaux, des tests diagnostiques et des produits de nutrition.",
+ DHR:"Danaher regroupe des entreprises fournissant des technologies et équipements pour les sciences de la vie et le diagnostic.",
+ REGN:"Regeneron est une entreprise biotechnologique qui développe des médicaments.",
+ ISRG:"Intuitive Surgical développe des systèmes robotiques et des instruments pour la chirurgie assistée.",
+ RTX:"RTX fournit des technologies pour l’aéronautique et la défense, notamment des moteurs et des systèmes de missiles.",
+ TSM:"TSMC fabrique des semi-conducteurs pour le compte d’autres entreprises.",
+ ASML:"ASML fabrique des machines de lithographie utilisées dans la production de puces électroniques.",
+ SAP:"SAP développe des logiciels de gestion d’entreprise, notamment pour les finances, les achats et les ressources humaines.",
+ NVO:"Novo Nordisk est un laboratoire pharmaceutique spécialisé notamment dans le diabète et l’obésité.",
+ SHEL:"Shell est un groupe énergétique actif dans le gaz, le pétrole, le gaz naturel liquéfié et les énergies bas carbone.",
+ TTE:"TotalEnergies est un groupe énergétique actif dans le pétrole, le gaz, l’électricité et les énergies renouvelables.",
+ UL:"Unilever commercialise des produits alimentaires, d’hygiène et d’entretien.",
+ AZN:"AstraZeneca développe des médicaments dans plusieurs domaines thérapeutiques.",
+ NVS:"Novartis est un groupe pharmaceutique qui développe et commercialise des médicaments.",
+ TM:"Toyota conçoit et fabrique des voitures, des véhicules hybrides et d’autres solutions de mobilité.",
+ BABA:"Alibaba est un groupe chinois actif dans le commerce en ligne, les services numériques et le cloud.",
+ NKE:"Nike conçoit et commercialise des chaussures, vêtements et équipements de sport.",
+ SBUX:"Starbucks exploite une chaîne internationale de cafés et vend des boissons et produits alimentaires.",
+ INTC:"Intel conçoit et fabrique des processeurs et d’autres semi-conducteurs pour ordinateurs et centres de données.",
+ ADI:"Analog Devices conçoit des semi-conducteurs pour le traitement des signaux, la mesure et les systèmes industriels.",
+ MRVL:"Marvell Technology conçoit des semi-conducteurs pour les réseaux, le stockage et les centres de données.",
+ ANET:"Arista Networks fournit des équipements et logiciels de réseau pour les centres de données et les entreprises.",
+ CRWD:"CrowdStrike développe des solutions de cybersécurité et de protection des appareils et systèmes informatiques.",
+ FTNT:"Fortinet fournit des solutions de cybersécurité, notamment des pare-feu et des outils de protection des réseaux.",
+ DDOG:"Datadog propose des outils de surveillance et d’analyse des applications, des infrastructures et des services cloud.",
+ NET:"Cloudflare fournit des services de sécurité, de performance et de distribution de contenus sur Internet.",
+ ZS:"Zscaler propose des solutions de cybersécurité et d’accès sécurisé aux applications et aux données en ligne.",
+ WDAY:"Workday développe des logiciels de gestion des ressources humaines et des finances pour les entreprises.",
+ TEAM:"Atlassian édite des outils de collaboration et de gestion de projets, dont Jira et Confluence.",
+ SNOW:"Snowflake fournit une plateforme cloud de stockage, de traitement et d’analyse de données.",
+ MDB:"MongoDB développe une base de données destinée aux applications modernes et aux services cloud.",
+ HPQ:"HP Inc. vend des ordinateurs personnels, des imprimantes et des consommables associés.",
+ DELL:"Dell Technologies vend des ordinateurs, des serveurs, des équipements de stockage et des solutions informatiques.",
+ SPOT:"Spotify propose un service de diffusion en continu de musique, de podcasts et d’autres contenus audio.",
+ ABNB:"Airbnb exploite une plateforme de réservation de logements et d’expériences touristiques.",
+ T:"AT&T est un opérateur américain de télécommunications proposant des services mobiles et Internet.",
+ VZ:"Verizon est un opérateur américain de télécommunications, notamment dans la téléphonie mobile et l’accès Internet.",
+ PINS:"Pinterest exploite une plateforme permettant de découvrir, d’enregistrer et de partager des idées visuelles.",
+ RBLX:"Roblox exploite une plateforme de jeux et d’expériences interactives créés en grande partie par ses utilisateurs.",
+ EA:"Electronic Arts édite des jeux vidéo, notamment EA Sports FC, Madden NFL et Les Sims.",
+ TTWO:"Take-Two Interactive édite des jeux vidéo, notamment Grand Theft Auto, NBA 2K et Red Dead Redemption.",
+ CMCSA:"Comcast est un groupe américain de médias, de divertissement et de télécommunications.",
+ DASH:"DoorDash exploite une plateforme de livraison de repas et de produits auprès des consommateurs.",
+ CL:"Colgate-Palmolive commercialise des produits d’hygiène bucco-dentaire, de soins personnels et d’entretien.",
+ DG:"Dollar General exploite des magasins de proximité proposant des produits courants à prix accessibles.",
+ MAR:"Marriott International exploite et franchise des hôtels et des établissements d’hébergement.",
+ HLT:"Hilton Worldwide exploite et franchise des hôtels et des marques d’hébergement.",
+ YUM:"Yum! Brands possède notamment les chaînes de restauration KFC, Taco Bell et Pizza Hut.",
+ KMB:"Kimberly-Clark fabrique des produits d’hygiène et de papier, dont Kleenex et Huggies.",
+ GIS:"General Mills commercialise des produits alimentaires emballés, des céréales et des produits pour animaux.",
+ HSY:"The Hershey Company fabrique et commercialise du chocolat et des confiseries.",
+ KHC:"Kraft Heinz commercialise des produits alimentaires et des marques comme Heinz et Kraft.",
+ TJX:"TJX Companies exploite des magasins de vêtements et de produits pour la maison à prix réduits.",
+ ORLY:"O’Reilly Automotive distribue des pièces et accessoires automobiles pour particuliers et professionnels.",
+ EL:"Estée Lauder Companies commercialise des produits de beauté, de maquillage, de soins et des parfums.",
+ PYPL:"PayPal fournit des services de paiement numérique et de transfert d’argent aux particuliers et aux entreprises.",
+ C:"Citigroup est un groupe bancaire international proposant des services financiers aux particuliers, entreprises et investisseurs.",
+ WFC:"Wells Fargo est un groupe bancaire américain proposant des services bancaires, de crédit et d’investissement.",
+ SCHW:"Charles Schwab fournit des services de courtage, d’investissement et de gestion de patrimoine.",
+ USB:"U.S. Bancorp est un groupe bancaire américain proposant des services de dépôt, de crédit et de paiement.",
+ PNC:"PNC Financial Services est un groupe bancaire américain proposant des services aux particuliers et aux entreprises.",
+ COF:"Capital One est un groupe financier spécialisé notamment dans les cartes de crédit et les services bancaires.",
+ BX:"Blackstone est une société d’investissement spécialisée notamment dans le capital-investissement et l’immobilier.",
+ ICE:"Intercontinental Exchange exploite des marchés financiers et fournit des données et des services de compensation.",
+ SNY:"Sanofi est un groupe pharmaceutique qui développe des médicaments et des vaccins.",
+ DEO:"Diageo commercialise des boissons alcoolisées et possède plusieurs marques internationales de spiritueux.",
+ F:"Ford conçoit, fabrique et commercialise des voitures, des utilitaires et des véhicules électriques.",
+ BA:"Boeing conçoit et fabrique des avions commerciaux, des systèmes de défense et des équipements aérospatiaux.",
+ DE:"Deere & Company fabrique des machines agricoles, des engins de construction et des équipements forestiers.",
+ HON:"Honeywell fournit des technologies et équipements pour l’industrie, l’aéronautique et l’automatisation.",
+ NOC:"Northrop Grumman développe des systèmes de défense, des technologies aérospatiales et des systèmes autonomes.",
+ UPS:"UPS fournit des services de livraison de colis, de transport et de logistique.",
+ FDX:"FedEx fournit des services de livraison express, de transport et de logistique à l’échelle internationale.",
+ COP:"ConocoPhillips est une entreprise d’exploration et de production de pétrole et de gaz.",
+ SLB:"SLB fournit des technologies et des services aux entreprises d’exploration et de production d’énergie.",
+ EOG:"EOG Resources explore et produit du pétrole et du gaz naturel.",
+ NEE:"NextEra Energy est un groupe énergétique américain actif dans l’électricité et les énergies renouvelables.",
+ GM:"General Motors conçoit et fabrique des voitures et des utilitaires, notamment sous les marques Chevrolet et Cadillac.",
+ PFE:"Pfizer est un laboratoire pharmaceutique qui développe et commercialise des médicaments et des vaccins.",
+ BMY:"Bristol Myers Squibb développe des médicaments, notamment en oncologie et dans les maladies immunitaires.",
+ AMGN:"Amgen est une entreprise de biotechnologie qui développe des médicaments pour différentes maladies.",
+ GILD:"Gilead Sciences développe des médicaments, notamment contre le VIH, les maladies du foie et certains cancers.",
+ VRTX:"Vertex Pharmaceuticals développe des médicaments, notamment pour traiter la mucoviscidose.",
+ MDT:"Medtronic développe des dispositifs médicaux pour le traitement de maladies cardiovasculaires et d’autres pathologies.",
+ CVS:"CVS Health regroupe des pharmacies, des services de santé et des activités d’assurance santé.",
+ SONY:"Sony est un groupe japonais actif dans les jeux vidéo, l’électronique, la musique et le cinéma."
+};
+const companyDescription=k=>COMPANY_FR[k]||`${STOCKS[k][0]} est une entreprise du secteur ${sec(k).toLowerCase()}. Cette fiche présente son cours et les données de marché disponibles dans le simulateur.`;
+function infoHtml(k){
+  const q=S.q[k]||{},f=v=>v>0?eur(v):"—",vol=v=>v>0?Math.round(v).toLocaleString("fr-FR"):"—";
+  const rows=[["Clôture précédente",S.pt[k]?eur(S.open[k]):"—"],["Ouverture",f(q.open)],["Plus haut du jour",f(q.hi)],["Plus bas du jour",f(q.lo)],["Volume",vol(q.vol)],["Volume moyen",vol(q.avg)],["52 semaines · bas",f(q.w52lo)],["52 semaines · haut",f(q.w52hi)]];
+  return`<div class="ig">${rows.map(r=>`<div><small>${r[0]}</small><b>${r[1]}</b></div>`).join("")}</div>`;
+}
+function lineChart(data){
+  if(data.length<2)return'<div class="empty">Le graphique se remplit au fil du temps.</div>';
+  const W=640,H=220,pad=34,vs=data.map(d=>d.v);
+  let mn=Math.min(...vs),mx=Math.max(...vs);if(mx-mn<.01){mn-=1;mx+=1}
+  const x=i=>pad+i*(W-pad-8)/(data.length-1),y=v=>H-24-(v-mn)/(mx-mn)*(H-44);
+  const pts=data.map((d,i)=>x(i).toFixed(1)+","+y(d.v).toFixed(1)).join(" ");
+  const up=vs[vs.length-1]>=vs[0],c=up?"var(--up)":"var(--down)";
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Évolution de la valeur du compte">
+  <line x1="${pad}" x2="${W-8}" y1="${y(mn)}" y2="${y(mn)}" stroke="var(--line)"/><line x1="${pad}" x2="${W-8}" y1="${y(mx)}" y2="${y(mx)}" stroke="var(--line)"/>
+  <text x="2" y="${y(mx)+4}" font-size="10" fill="var(--mute)">${mx.toFixed(2)}</text><text x="2" y="${y(mn)+4}" font-size="10" fill="var(--mute)">${mn.toFixed(2)}</text>
+  <polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
+}
+function donut(){
+  const items=Object.entries(S.pos).map(([k,p])=>[k,p.qty*S.prices[k]]);
+  if(S.cash>0.005)items.push(["Liquidités",S.cash]);
+  const tot=items.reduce((a,i)=>a+i[1],0)||1;let off=0;const r=60,C=2*Math.PI*r;
+  const names=Object.keys(STOCKS);
+  const col=k=>k==="Liquidités"?"#9aa59d":COLORS[names.indexOf(k)%COLORS.length];
+  const arcs=items.map(([k,v])=>{const len=v/tot*C;const s=`<circle r="${r}" cx="80" cy="80" fill="none" stroke="${col(k)}" stroke-width="26" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)"/>`;off+=len;return s}).join("");
+  const leg=items.map(([k,v])=>`<div><i style="background:${col(k)}"></i>${k==="Liquidités"?k:STOCKS[k][0]} · ${(v/tot*100).toFixed(1).replace(".",",")} %</div>`).join("");
+  return`<div class="donutwrap"><svg viewBox="0 0 160 160" width="170" role="img" aria-label="Répartition des investissements">${arcs}</svg><div class="legend">${leg}</div></div>`;
+}
+function kpis(){
+  const st=S.start||100,t=total(),g=t-st;
+  return`<div class="grid kpis">
+  <div class="card kpi"><small>💰 Capital disponible</small><b>${eur(S.cash)}</b></div>
+  <div class="card kpi"><small>📊 Valeur du portefeuille</small><b>${eur(t)}</b></div>
+  <div class="card kpi"><small>🏢 Argent investi</small><b>${eur(invested())}</b></div>
+  <div class="card kpi"><small>🟢 Gains / pertes</small><b class="${cls(g)}">${sgn(g)} <span style="font-size:14px">(${pct(g/st*100)})</span></b></div></div>`;
+}
+function positions(){
+  const e=Object.entries(S.pos);
+  if(!e.length)return'<div class="empty">Aucune position. Va dans « Marchés » pour acheter ta première action.</div>';
+  return`<div class="scroll"><table><tr><th>Action</th><th>Quantité</th><th title="Prix moyen payé par action, frais inclus">Prix moyen ⓘ</th><th>Cours</th><th title="Quantité × cours du moment">Valeur actuelle ⓘ</th><th>+/- (€)</th><th>+/- (%)</th><th></th></tr>`+
+  e.map(([k,p])=>{const v=p.qty*S.prices[k],g=v-p.qty*p.avg;
+  return`<tr><td>${logo(k)}${STOCKS[k][0]}</td><td>${p.qty.toFixed(4).replace(".",",")}</td><td>${eur(p.avg)}</td><td>${eur(S.prices[k])}</td><td>${eur(v)}</td><td class="${cls(g)}">${sgn(g)}</td><td class="${cls(g)}">${pct(g/(p.qty*p.avg)*100)}</td><td><button class="btn sell" data-sell="${k}">Vendre</button></td></tr>`}).join("")+`</table></div>`;
+}
+function history(){
+  if(!S.hist.length)return'<div class="empty">Aucune opération pour le moment.</div>';
+  return`<div class="scroll"><table><tr><th>Date</th><th>Type</th><th>Action</th><th>Quantité</th><th>Prix</th><th>Montant</th><th title="0,2 % du montant à chaque achat ou vente">Frais ⓘ</th></tr>`+
+  S.hist.slice(0,30).map(h=>`<tr><td>${new Date(h.t).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"})}</td><td class="${h.type==="Achat"?"down":"up"}">${h.type}${h.auto?" (ordre)":""}</td><td>${STOCKS[h.sym][0]}</td><td>${h.qty.toFixed(4).replace(".",",")}</td><td>${eur(h.price)}</td><td>${eur(h.amt)}</td><td>${eur(h.fee||0)}</td></tr>`).join("")+`</table></div>`;
+}
+const esc=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function card(k){const R=ready(k),d=R?(S.prices[k]/S.open[k]-1)*100:0;
+  return`<div class="card clk" data-open="${k}"><button class="star" data-fav="${k}" aria-label="Favori" title="Ajouter aux favoris">${S.fav[k]?"★":"☆"}</button><h3>${logo(k)}${STOCKS[k][0]} <small style="color:var(--mute)">${k}</small></h3>
+  <div style="color:var(--mute);font-size:12px;margin:-6px 0 6px">${sec(k)}</div>
+  <div class="price">${priceText(k)}</div><div class="chg ${R?cls(d):""}" style="font-size:13px">${R?pct(d)+" "+chgLabel():"chargement…"}</div><div class="age" style="color:var(--mute);font-size:11.5px;min-height:14px">${ageText(k)}</div>
+  <div class="row"><input type="number" min="1" step="1" value="10" id="a_${k}" aria-label="Montant en euros"><button class="btn" data-buy="${k}">Acheter (€)</button></div></div>`}
+function marketKeys(){
+  let ks=Object.keys(STOCKS).filter(k=>(!F.q||(STOCKS[k][0]+" "+k).toLowerCase().includes(F.q))&&(!F.sec||sec(k)===F.sec)&&(!F.fav||S.fav[k]));
+  const ch=k=>S.prices[k]/S.open[k];
+  if(F.sort==="up")ks.sort((a,b)=>ch(b)-ch(a));else if(F.sort==="down")ks.sort((a,b)=>ch(a)-ch(b));else if(F.sort==="price")ks.sort((a,b)=>(ready(b)?S.prices[b]:-1)-(ready(a)?S.prices[a]:-1));
+  ks.sort((a,b)=>(S.fav[b]?1:0)-(S.fav[a]?1:0));
+  return ks;
+}
+function marketList(){
+  const all=marketKeys(),ks=all.slice(0,F.n);
+  if(!all.length)return'<div class="empty">Aucune action ne correspond à ta recherche.</div>';
+  return`<div class="grid mk">${ks.map(card).join("")}</div>${all.length>ks.length?`<div style="text-align:center;margin-top:14px"><button class="btn" data-more="1">Afficher plus (${ks.length} sur ${all.length})</button></div>`:""}`;
+}
+function markets(){
+  const so=o=>`<option value="${o[0]}" ${F.sort===o[0]?"selected":""}>${o[1]}</option>`;
+  return`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+  <input id="q" class="ctl" type="search" placeholder="Rechercher une entreprise…" value="${esc(F.q)}" aria-label="Rechercher">
+  <select id="fsec" class="ctl" aria-label="Secteur"><option value="">Tous les secteurs</option>${Object.keys(SECM).map(n=>`<option ${F.sec===n?"selected":""}>${n}</option>`).join("")}</select>
+  <select id="fsort" class="ctl" aria-label="Trier">${[["","Ordre alphabétique"],["up","Plus fortes hausses"],["down","Plus fortes baisses"],["price","Prix décroissant"]].map(so).join("")}</select>
+  <label style="font-size:14px"><input type="checkbox" id="ffav" ${F.fav?"checked":""}> ⭐ Favoris seulement</label></div><div id="mlist">${marketList()}</div>`;
+}
+function render(soft){
+  const m=document.getElementById("main");
+  if(soft&&view==="guide")return;
+  if(soft&&view==="markets"){
+    Object.keys(STOCKS).forEach(k=>{const c=m.querySelector('[data-open="'+k+'"]');if(!c)return;const R=ready(k),d=R?(S.prices[k]/S.open[k]-1)*100:0,ch=c.querySelector(".chg");c.querySelector(".price").textContent=priceText(k);ch.className="chg "+(R?cls(d):"");ch.textContent=R?pct(d)+" "+chgLabel():"chargement…";c.querySelector(".age").textContent=ageText(k)});return}
+  if(view==="general"){
+    const mv=Object.keys(STOCKS).filter(ready).map(k=>[k,(S.prices[k]/S.open[k]-1)*100]).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    m.innerHTML=`<h2>Vue générale</h2>${kpis()}<div class="card" style="margin-bottom:14px"><h3>📈 Évolution de ton compte</h3>${lineChart(S.series)}</div>
+    <div class="card" style="margin-bottom:14px"><h3>🎯 Objectifs</h3>${goalsSummary()}</div><div class="card" style="margin-bottom:14px"><h3>🏆 Classement des profils</h3>${board()}</div><div class="card"><h3>Plus fortes variations du marché</h3><table>${mv.map(([k,d])=>`<tr><td>${STOCKS[k][0]}</td><td>${eur(S.prices[k])}</td><td class="${cls(d)}">${pct(d)}</td></tr>`).join("")}</table></div>`;
+  }else if(view==="portfolio"){
+    m.innerHTML=`<h2>Portefeuille</h2>${kpis()}<div class="grid two"><div class="card"><h3>📈 Évolution de la valeur du compte</h3>${lineChart(S.series)}</div><div class="card"><h3>🥧 Répartition</h3>${donut()}</div></div>
+    <div class="card" style="margin-bottom:14px"><h3>📊 Mes actions</h3>${positions()}</div><div class="card" style="margin-bottom:14px"><h3>🏅 Meilleurs et pires placements</h3>${ranking()}</div><div class="card" style="margin-bottom:14px"><h3>⏳ Ordres en attente</h3>${ordersHtml()}</div><div class="card"><h3>🧾 Historique des achats et ventes</h3>${history()}</div>`;
+  }else if(view==="guide"){
+    m.innerHTML=guideView();guideMark();
+  }else if(view==="goals"){
+    m.innerHTML=goalsView();
+  }else{
+    m.innerHTML=`<h2>Marchés</h2><p style="color:var(--mute);margin:-8px 0 16px;font-size:14px">Capital disponible : <b>${eur(S.cash)}</b> · Frais de courtage simulés : 0,2 % par achat et par vente${S.source?" · "+Object.keys(STOCKS).filter(k=>S.pt[k]).length+"/"+Object.keys(STOCKS).length+" cours chargés":""}</p>${markets()}`;
+  }
+}
+let openSym=null;
+const modal=document.createElement("div");modal.id="modal";document.body.appendChild(modal);
+function openModal(k){
+  openSym=k;S.seen[k]=1;drawModal();modal.classList.add("on");loadNews(k);
+  if(APIKEY&&!liveErr&&(!S.pt[k]||(mktOpen()&&Date.now()-S.pt[k]>90000)))loadQuotes([k]);
+}
+const NEWSC={};let gdeltLast=0;
+const NAMEQ={TGT:"Target Corporation",META:"Meta Platforms",F:"Ford Motor",SHEL:"Shell plc",V:"Visa Inc",MA:"Mastercard",T:"AT&T",C:"Citigroup",GM:"General Motors",EA:"Electronic Arts",DE:"Deere & Company",GE:"GE Aerospace",CL:"Colgate-Palmolive",NOW:"ServiceNow",ARM:"Arm Holdings",SNY:"Sanofi",AMD:"AMD processeurs",IBM:"IBM",UPS:"UPS colis"};
+const newsName=k=>NAMEQ[k]||STOCKS[k][0].replace(/\s*\(.*\)/,"").trim();
+const POSW=["hausse","grimpe","bondit","s'envole","envol","record","dépasse","depasse","relève","releve","relèvement","rachat","croissance","bénéfice","benefice","contrat","accord","partenariat","approbation","feu vert","rebond","succès","succes","surperform","outperform","upgrade","beats?\\b","surg(e|es|ed|ing)\\b","jump(s|ed)?\\b","soar(s|ed|ing)?\\b","rall(y|ies|ied)\\b","gain(s|ed)?\\b","strong\\b","rais(e|es|ed)\\b","approv(al|ed)\\b","wins?\\b","profit","boost"];
+const NEGW=["baisse","chute","plonge","recule","recul\\b","s'effondre","effondrement","perte","déficit","deficit","avertissement","abaisse","dégrade","degrade","enquête","enquete","amende","procès","proces","plainte","licenci","suppression","rappel","panne","fraude","scandale","déçoit","decoit","sanction","retard","crise","downgrade","cuts?\\b","cutting\\b","plung(e|es|ed)\\b","fall(s|ing)?\\b","fell\\b","drop(s|ped)?\\b","tumbl(e|es|ed)\\b","lawsuit","probe\\b","investigation","recall","layoff","miss(es|ed)?\\b","warn(s|ed|ing)?\\b","slump","loss(es)?\\b","fine[sd]?\\b","crisis","delay(s|ed)?\\b"];
+const rxW=l=>new RegExp("(^|[^a-zà-ÿ])("+l.join("|")+")","gi");
+const RXP=rxW(POSW),RXN=rxW(NEGW);
+function sentiment(t){const a=(String(t).match(RXP)||[]).length,b=(String(t).match(RXN)||[]).length;return a>b?1:b>a?-1:0}
+function ago(t){if(!t)return"";const m=Math.round((Date.now()-t)/60000);if(m<2)return"à l'instant";if(m<60)return"il y a "+m+" min";const h=Math.round(m/60);if(h<24)return"il y a "+h+" h";const d=Math.round(h/24);return d<30?"il y a "+d+" j":new Date(t).toLocaleDateString("fr-FR")}
+const gdate=s=>{const m=/^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z$/.exec(s||"");return m?Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5],+m[6]):0};
+async function getJson(url,ms){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||7000);try{const r=await fetch(url,{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(t)}}
+const pdate=d=>{d=String(d||"");return/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(d)?Date.parse(d.replace(" ","T")+"Z"):(Date.parse(d)||0)};
+const FHKEY0=()=>{try{return localStorage.getItem("fh_key")||""}catch(e){return""}};
+const r2j=u=>"https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(u);
+const bingUrl=k=>"https://www.bing.com/news/search?q="+encodeURIComponent(newsName(k)+" bourse")+"&format=rss&setlang=fr&cc=FR";
+const googleUrl=k=>"https://news.google.com/rss/search?q="+encodeURIComponent('"'+newsName(k)+'" bourse when:14d')+"&hl=fr&gl=FR&ceid=FR:fr";
+function fromBing(it){let u=String(it.link||it.url||""),src="";try{const r=new URL(u).searchParams.get("url");if(r)u=r;src=new URL(u).hostname.replace(/^www\./,"")}catch(e){}return{title:String(it.title||""),url:u,src,t:pdate(it.pubDate)}}
+function fromGoogle(it){let title=String(it.title||""),src=String(it.author||"");const m=/^(.*) - ([^-]+)$/.exec(title);if(m){title=m[1];src=m[2]}return{title,url:it.link,src,t:pdate(it.pubDate)}}
+async function viaR2j(url,conv){const j=await getJson(r2j(url));if(j.status!=="ok")throw new Error(j.message||"flux indisponible");return(j.items||[]).map(conv)}
+const newsBing=k=>viaR2j(bingUrl(k),fromBing);
+const newsGoogle=k=>viaR2j(googleUrl(k),fromGoogle);
+const newsYahooRss=k=>viaR2j("https://feeds.finance.yahoo.com/rss/2.0/headline?s="+encodeURIComponent(k)+"&region=US&lang=en-US",it=>({title:String(it.title||""),url:it.link,src:"Yahoo Finance",t:pdate(it.pubDate)}));
+function dec(x){return String(x).replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'")}
+function parseRssXml(x){const out=[],re=/<item>([\s\S]*?)<\/item>/g,tag=(b,t)=>{const r=new RegExp("<"+t+"[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</"+t+">").exec(b);return r?r[1].trim():""};let m;while((m=re.exec(x)))out.push({title:dec(tag(m[1],"title")),link:dec(tag(m[1],"link")),pubDate:tag(m[1],"pubDate")});return out}
+async function newsProxy(k){const c=new AbortController(),t=setTimeout(()=>c.abort(),8000);try{const r=await fetch("https://api.allorigins.win/raw?url="+encodeURIComponent(bingUrl(k)),{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return parseRssXml(await r.text()).map(fromBing)}finally{clearTimeout(t)}}
+async function newsGdelt(k){
+  const w=gdeltLast+5200-Date.now();if(w>0)await new Promise(r=>setTimeout(r,w));gdeltLast=Date.now();
+  const q=encodeURIComponent('"'+newsName(k)+'" (bourse OR action OR stock OR shares OR earnings)');
+  const j=await getJson("https://api.gdeltproject.org/api/v2/doc/doc?query="+q+"&mode=ArtList&format=json&maxrecords=20&sort=datedesc&timespan=14d",9000);
+  return(j.articles||[]).filter(a=>/^(French|English)$/i.test(a.language||"")).map(a=>({title:a.title,url:a.url,src:a.domain,t:gdate(a.seendate)}));
+}
+async function newsYahoo(k){
+  const j=await getJson("https://query1.finance.yahoo.com/v1/finance/search?q="+encodeURIComponent(k)+"&quotesCount=0&newsCount=10");
+  return(j.news||[]).map(n=>({title:n.title,url:n.link,src:n.publisher,t:(n.providerPublishTime||0)*1000}));
+}
+async function newsFinnhub(k){
+  const key=FHKEY0();if(!key)throw new Error("pas de clé");const t=new Date(),f=new Date(t-14*864e5),d=x=>x.toISOString().slice(0,10);
+  const j=await getJson("https://finnhub.io/api/v1/company-news?symbol="+encodeURIComponent(k)+"&from="+d(f)+"&to="+d(t)+"&token="+encodeURIComponent(key));
+  if(!Array.isArray(j))throw new Error("réponse inattendue");return j.map(n=>({title:n.headline,url:n.url,src:n.source,t:(n.datetime||0)*1000}));
+}
+newsBing.label="Bing Actualités";newsGoogle.label="Google Actualités";newsProxy.label="Relais allorigins";newsYahooRss.label="Yahoo RSS";newsGdelt.label="GDELT";newsYahoo.label="Yahoo recherche";newsFinnhub.label="Finnhub";
+async function translateHeadlineToFrench(title){
+  title=String(title||"");
+  if(!title || /[àâçéèêëîïôûùüÿœæ]/i.test(title)) return title;
+  try{
+    const url="https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=fr&dt=t&q="+encodeURIComponent(title);
+    const data=await getJson(url,7000);
+    if(Array.isArray(data)&&Array.isArray(data[0]))return data[0].map(x=>x&&x[0]||"").join("")||title;
+  }catch(e){}
+  return title;
+}
+async function loadNews(k){
+  const e=NEWSC[k];if(e&&(e.loading||Date.now()-e.ts<(e.err?60000:900000)))return;
+  NEWSC[k]={loading:true,ts:Date.now(),items:e&&e.items};const errs=[];let won=false;
+  // priorité : clé Finnhub, puis Bing/Google en français ; les autres ne démarrent que si besoin
+  const plan=[[newsBing,0],[newsGoogle,0],[newsProxy,2500],[newsYahooRss,2500],[newsGdelt,4000],[newsYahoo,4000]];if(FHKEY0())plan.unshift([newsFinnhub,0]);
+  let items=null;
+  try{items=await Promise.any(plan.map(async([f,d])=>{
+    if(d)await new Promise(r=>setTimeout(r,d));if(won)throw new Error("annulé");
+    try{const r=await f(k),ok=(r||[]).filter(n=>n.title&&/^https?:\/\//.test(n.url||""));if(!ok.length)throw new Error("aucun résultat");won=true;return ok}
+    catch(x){errs.push(f.label+" : "+String(x&&x.name==="AbortError"?"délai dépassé":(x&&x.message)||x).slice(0,70));throw x}}))}catch(x){items=null}
+  if(items){const seen=new Set();items=items.filter(n=>{const key=n.title.toLowerCase().slice(0,60);if(seen.has(key))return false;seen.add(key);return true}).sort((a,b)=>b.t-a.t).slice(0,8);items=await Promise.all(items.map(async n=>({...n,title:await translateHeadlineToFrench(n.title)})));items=items.map(n=>({...n,s:sentiment(n.title)}));NEWSC[k]={items,ts:Date.now()}}
+  else{const empty=errs.some(x=>/aucun résultat/.test(x));
+    NEWSC[k]={err:empty?"aucune actualité trouvée pour le moment":"aucune source n'a répondu correctement depuis ton navigateur (connexion coupée ou bloquée ?)",errs,ts:Date.now(),items:e&&e.items}}
+  if(openSym===k){const el=document.getElementById("mnews");if(el)el.innerHTML=newsHtml(k)}
+}
+function newsHtml(k){
+  const q=encodeURIComponent(newsName(k)+" bourse"),links=`<div class="nlinks"><a class="lnk" href="https://news.google.com/search?q=${q}&hl=fr&gl=FR&ceid=FR:fr">Plus d'actualités sur Google ↗</a> · <a class="lnk" href="https://finance.yahoo.com/quote/${encodeURIComponent(k)}/news">Yahoo Finance ↗</a></div>`;
+  const e=NEWSC[k];
+  if(!e||(e.loading&&!e.items))return'<div class="empty">Recherche des actualités récentes…</div>'+links;
+  if(!e.items)return`<div class="empty">Impossible d'afficher les actualités ici : ${esc(e.err)}.</div>`+(e.errs&&e.errs.length?`<details class="nnote"><summary>Détails techniques</summary>${e.errs.map(esc).join("<br>")}</details>`:"")+`<div class="nnote">Astuce : une clé gratuite Finnhub (facultative, bouton 🔑 du menu) rend les actualités plus fiables.</div>`+links;
+  const it=e.items,np=it.filter(n=>n.s>0).length,nn=it.filter(n=>n.s<0).length;
+  return`<div class="nsum">${it.length} actualités récentes : <b class="up">${np} plutôt positive${np>1?"s":""}</b> · <b class="down">${nn} plutôt négative${nn>1?"s":""}</b> · ${it.length-np-nn} neutre${it.length-np-nn>1?"s":""}</div>`+
+   it.map(n=>`<a class="nit" href="${esc(n.url)}"><i class="nd ${n.s>0?"p":n.s<0?"n":"z"}"></i><span><b>${esc(n.title)}</b><small>${esc(n.src||"")}${n.src&&n.t?" · ":""}${ago(n.t)}${n.s?` · <span class="${n.s>0?"up":"down"}">${n.s>0?"plutôt positive":"plutôt négative"}</span>`:""}</small></span></a>`).join("")+
+   `<div class="nnote">Titres trouvés automatiquement sur Internet. Le classement positif / négatif est indicatif : il repose sur des mots du titre, pas sur une analyse financière.</div>`+links;
+}
+function priceHtml(k){
+  if(!ready(k))return'— <small style="color:var(--mute);font-size:13px">chargement du cours…</small>';
+  const d=(S.prices[k]/S.open[k]-1)*100,a=ageText(k);
+  return`${eur(S.prices[k])} <span class="${cls(d)}" style="font-size:14px">${pct(d)} ${chgLabel()}</span>${a?`<div style="font-size:12px;color:var(--mute);font-weight:400">${a}</div>`:""}`;
+}
+function drawModal(){
+  const k=openSym;if(!k)return;const p=S.pos[k],n=S.orders.filter(o=>o.sym===k).length,R=ready(k);
+  modal.innerHTML=`<div class="box" role="dialog" aria-label="${STOCKS[k][0]}"><div class="mh"><h2>${logo(k)}${STOCKS[k][0]} <small style="color:var(--mute)">${k}</small></h2><button class="btn" data-close="1" style="background:var(--mute)">Fermer</button></div>
+  <div style="color:var(--mute);font-size:13px;margin-bottom:6px">${sec(k)} · ${S.q[k]&&S.q[k].ex?esc(S.q[k].ex):"Marché boursier"}</div><div class="card" style="margin:10px 0 14px;background:var(--bg)"><b>À propos de l’entreprise</b><p style="font-size:13.5px;line-height:1.55;margin:6px 0 0">${esc(companyDescription(k))}</p></div>
+  <div class="price" id="mprice">${priceHtml(k)}</div>
+  <div class="rng" role="group" aria-label="Période du graphique">${RANGES.map(r=>`<button class="rb ${r[0]===MR?"on":""}" data-range="${r[0]}">${r[1]}</button>`).join("")}</div>
+  <div id="mchart">${chartFor(k)}</div>
+  <div id="minfo">${infoHtml(k)}</div>
+  <div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="number" min="1" step="1" value="10" id="m_amt" aria-label="Montant en euros">€ <button class="btn" data-mbuy="1">Acheter</button>
+  ${p?`<button class="btn sell" data-msell="1">Vendre tout (${eur(p.qty*S.prices[k])})</button>`:""}
+  <span style="font-size:12px;color:var(--mute)">Fiche entreprise en français ci-dessus</span></div>
+  <div style="margin-top:14px;font-size:13.5px"><b>Ordre à seuil</b> <span title="S'exécute tout seul quand le prix atteint ton seuil, tant que l'appli est ouverte (achat : utilise le montant ci-dessus).">ⓘ</span>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"><input id="o_price" class="ctl" type="number" step="0.01" value="${R?S.prices[k].toFixed(2):""}" style="width:110px" aria-label="Prix seuil en euros"> €
+  <button class="btn" data-ord="buy">Acheter si prix ≤</button><button class="btn sell" data-ord="sell">Vendre si prix ≥</button></div>
+  ${n?`<div style="color:var(--mute);margin-top:4px">${n} ordre(s) en attente (voir Portefeuille)</div>`:""}</div>
+  <p style="font-size:13px;color:var(--mute)">Capital disponible : ${eur(S.cash)}${p?" · Tu possèdes "+p.qty.toFixed(4).replace(".",",")+" action(s)":""}</p>
+  <h3 class="ntitle">Actualités récentes (en français)</h3><div id="mnews">${newsHtml(k)}</div></div>`;
+}
+function refreshModal(){
+  if(!openSym||!modal.classList.contains("on")||!document.getElementById("mprice"))return;const k=openSym;
+  document.getElementById("mprice").innerHTML=priceHtml(k);const el=document.getElementById("minfo");if(el)el.innerHTML=infoHtml(k);
+}
+modal.addEventListener("click",e=>{
+  if(e.target===modal||e.target.closest("[data-close]")){modal.classList.remove("on");openSym=null;return}
+  const rg=e.target.closest("[data-range]");if(rg){MR=+rg.dataset.range;modal.querySelectorAll("[data-range]").forEach(b=>b.classList.toggle("on",+b.dataset.range===MR));document.getElementById("mchart").innerHTML=chartFor(openSym);return}
+  if(e.target.closest("[data-doreset]")){S=ensure(fresh());save();modal.classList.remove("on");setStatus();render();toast("Compte remis à "+eur(START)+".");return}
+  const ks=e.target.closest("[data-ksave]");if(ks){APIKEY=document.getElementById("kinp").value.trim();try{localStorage.setItem("td_key",APIKEY)}catch(x){}
+    {const f=document.getElementById("kfh");if(f){try{localStorage.setItem("fh_key",f.value.trim())}catch(x){}}}for(const n in NEWSC)delete NEWSC[n];
+    HIST={};liveErr=false;yahooErr=false;dayStop="";lastQuote=0;lastYahooAttempt=0;
+    if(ks.dataset.ksave==="reset"){S=ensure(fresh());save()}
+    toast(APIKEY?"Clé enregistrée.":"Clé supprimée : Yahoo Finance seul.");
+    setStatus();modal.classList.remove("on");openSym=null;render();return}
+  if(e.target.closest("[data-mbuy]")){doBuy(openSym,document.getElementById("m_amt").value)}
+  if(e.target.closest("[data-msell]")){doSell(openSym)}
+  const od=e.target.closest("[data-ord]");if(od){const k=openSym,pr=parseFloat(document.getElementById("o_price").value),amt=parseFloat(document.getElementById("m_amt").value),t=od.dataset.ord;
+    if(!(pr>0))return toast("Entre un prix seuil.");
+    if(t==="buy"&&!(amt>0))return toast("Entre un montant à acheter.");
+    if(t==="sell"&&!S.pos[k])return toast("Tu ne possèdes pas cette action.");
+    S.orders.push({sym:k,type:t,price:pr,amt});save();toast("Ordre enregistré.");drawModal()}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){modal.classList.remove("on");openSym=null}});
+document.querySelectorAll("aside button[data-v]").forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll("aside button[data-v]").forEach(x=>x.classList.toggle("on",x===b));render()});
+document.getElementById("main").addEventListener("click",e=>{
+  const b=e.target.closest("[data-buy]");if(b)doBuy(b.dataset.buy,document.getElementById("a_"+b.dataset.buy).value);
+  const s=e.target.closest("[data-sell]");if(s)doSell(s.dataset.sell);
+  const gq=e.target.closest("[data-gpart]");if(gq){GP={part:+gq.dataset.gpart,page:0};render();m_top();return}
+  const gg=e.target.closest("[data-gpage]");if(gg){GP.page=+gg.dataset.gpage;render();m_top();return}
+  const gn=e.target.closest("[data-gnav]");if(gn&&!gn.disabled){const P=GUIDE[GP.part];
+    if(gn.dataset.gnav==="next"){if(GP.page<P.pages.length-1)GP.page++;else if(GP.part<GUIDE.length-1){GP.part++;GP.page=0}}
+    else{if(GP.page>0)GP.page--;else if(GP.part>0){GP.part--;GP.page=GUIDE[GP.part].pages.length-1}}
+    render();m_top();return}
+  const gt=e.target.closest("[data-goto]");if(gt){view=gt.dataset.goto;document.querySelectorAll("aside button[data-v]").forEach(x=>x.classList.toggle("on",x.dataset.v===view));render();return}
+  const mo=e.target.closest("[data-more]");if(mo){F.n+=24;document.getElementById("mlist").innerHTML=marketList();lastQuote=0;return}
+  const f=e.target.closest("[data-fav]");if(f){S.fav[f.dataset.fav]=!S.fav[f.dataset.fav];save();document.getElementById("mlist").innerHTML=marketList();return}
+  const c=e.target.closest("[data-cancel]");if(c){S.orders.splice(+c.dataset.cancel,1);save();render();return}
+  const o=e.target.closest("[data-open]");if(o&&!b&&!s&&e.target.tagName!=="INPUT")openModal(o.dataset.open);
+});
+document.getElementById("reset").onclick=()=>{
+  openSym=null;modal.innerHTML=`<div class="box"><div class="mh"><h2>Remettre à zéro ?</h2><button class="btn" data-close="1" style="background:var(--mute)">Fermer</button></div><p style="color:var(--mute)">Ton portefeuille et ton historique seront effacés, et tu repartiras avec ${eur(START)}.</p><div style="display:flex;gap:8px"><button class="btn sell" data-doreset="1">Oui, tout effacer</button><button class="btn" data-close="1" style="background:var(--mute)">Annuler</button></div></div>`;modal.classList.add("on")};
+const mainEl=document.getElementById("main");
+mainEl.addEventListener("input",e=>{if(e.target.id==="q"){F.q=e.target.value.toLowerCase();F.n=24;document.getElementById("mlist").innerHTML=marketList()}});
+mainEl.addEventListener("change",e=>{if(["fsec","fsort","ffav"].includes(e.target.id)){F.sec=document.getElementById("fsec").value;F.sort=document.getElementById("fsort").value;F.fav=document.getElementById("ffav").checked;F.n=24;document.getElementById("mlist").innerHTML=marketList()}});
+function applyTheme(t){document.documentElement.dataset.theme=t}
+try{const t=localStorage.getItem("theme");if(t)applyTheme(t)}catch(e){}
+document.getElementById("themebtn").onclick=()=>{const cur=document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"),n=cur==="dark"?"light":"dark";applyTheme(n);try{localStorage.setItem("theme",n)}catch(e){}};
+document.getElementById("csvbtn").onclick=()=>{
+  const n=x=>String(x).replace(".",",");
+  const rows=[["Date","Type","Action","Quantité","Prix (€)","Montant (€)","Frais (€)","Ordre auto"]].concat(S.hist.slice().reverse().map(h=>[new Date(h.t).toLocaleString("fr-FR"),h.type,h.sym,n(h.qty.toFixed(4)),n(h.price.toFixed(2)),n(h.amt.toFixed(2)),n((h.fee||0).toFixed(2)),h.auto?"oui":"non"]));
+  const blob=new Blob(["\ufeff"+rows.map(r=>r.join(";")).join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="historique-bourse.csv";a.click();toast("Historique exporté (fichier CSV).");
+};
+const pb=document.getElementById("profbtn");
+const AVS=["🦊","🐼","🦁","🐯","🦉","🐙","🚀","🧑‍💼","🦄","🐲"];
+let W={mode:"login"};
+const wel=document.getElementById("welcome");
+function werr(m){const el=document.getElementById("werr");if(el)el.textContent=m}
+function drawWelcome(){
+  const isCreate=W.mode==="create";
+  const body=isCreate
+    ? `<h2>Créer ton compte</h2><input id="nemail" type="email" class="wi" placeholder="Adresse e-mail" autocomplete="email" aria-label="Adresse e-mail"><input id="np" class="wi" maxlength="20" placeholder="Pseudo" autocomplete="nickname" aria-label="Pseudo"><input id="npw" type="password" class="wi" placeholder="Mot de passe (6 caractères minimum)" autocomplete="new-password" aria-label="Mot de passe"><div class="wavs" role="radiogroup" aria-label="Avatar">${AVS.map((a,i)=>`<label class="wavl"><input type="radio" name="av" value="${a}" ${i===0?"checked":""}><span>${a}</span></label>`).join("")}</div><div id="werr" class="werr" role="alert"></div><button class="wbtn" data-docreate="1">Créer mon compte et commencer</button><button class="wlink" data-loginmode="1">J'ai déjà un compte</button>`
+    : `<h2>Connexion</h2><p class="wsub">Connecte-toi avec le même compte sur ton ordinateur et ton téléphone.</p><input id="nemail" type="email" class="wi" placeholder="Adresse e-mail" autocomplete="email" aria-label="Adresse e-mail"><input id="npw" type="password" class="wi" placeholder="Mot de passe" autocomplete="current-password" aria-label="Mot de passe"><div id="werr" class="werr" role="alert"></div><button class="wbtn" data-dologin="1">Se connecter</button><button class="wlink" data-create="1">Créer un nouveau compte</button><button class="wlink" data-resetpw="1">Mot de passe oublié ?</button>`;
+  wel.innerHTML=`<div class="wcard"><div class="wlogo">📈</div><h1>Simulateur de bourse</h1><p class="wsub">Ton compte et ton portefeuille seront sauvegardés en ligne.</p>${body}<p class="wnote">Utilise la même adresse e-mail et le même mot de passe sur tous tes appareils.</p></div>`;
+}
+function setLoggedIn(user, profile, state){
+  fbUser=user; PROFILE=(profile&&profile.name)||((user.email||'').split('@')[0])||'Joueur'; KEY=KEYP+user.uid; LOGGED=true;
+  S=ensure(state&&state.prices?state:load());
+  try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem('profile',PROFILE)}catch(e){}
+  pb.textContent='👤 '+PROFILE+' · déconnexion';
+  wel.classList.remove('on');view='general';
+  document.querySelectorAll('aside button[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v==='general'));
+  lastQuote=0;checkGoals(true);setWho();drawTape(true);setStatus();render();
+  if(!state || !state.prices) save();
+  toast('Connecté : '+PROFILE);
+}
+async function handleLogin(){
+  if(!fbReady)return werr('Firebase ne se charge pas. Vérifie ta connexion Internet.');
+  const email=(document.getElementById('nemail').value||'').trim(),password=document.getElementById('npw').value;
+  if(!email||!password)return werr('Saisis ton adresse e-mail et ton mot de passe.');
+  try{const cred=await fbAuth.signInWithEmailAndPassword(email,password);const snap=await fbDb.ref('users/'+cred.user.uid).once('value');const data=snap.val()||{};setLoggedIn(cred.user,data.profile,data.state);}
+  catch(e){werr(firebaseError(e));}
+}
+function firebaseError(e){const c=e&&e.code||'';if(c.includes('user-not-found')||c.includes('invalid-credential')||c.includes('wrong-password'))return 'Adresse e-mail ou mot de passe incorrect.';if(c.includes('email-already-in-use'))return 'Cette adresse e-mail possède déjà un compte. Connecte-toi.';if(c.includes('weak-password'))return 'Choisis un mot de passe de 6 caractères minimum.';if(c.includes('invalid-email'))return 'Adresse e-mail invalide.';if(c.includes('network-request-failed'))return 'Connexion Internet indisponible.';return 'Erreur Firebase : '+(e.message||c);}
+async function handleCreate(){
+  if(!fbReady)return werr('Firebase ne se charge pas. Vérifie ta connexion Internet.');
+  const email=(document.getElementById('nemail').value||'').trim(),password=document.getElementById('npw').value,name=(document.getElementById('np').value||'').trim(),av=(wel.querySelector('input[name=av]:checked')||{}).value||AVS[0];
+  if(!email||!name||!password)return werr('Remplis tous les champs.');if(name.length<2)return werr('Le pseudo doit contenir au moins 2 caractères.');if(password.length<6)return werr('Le mot de passe doit faire au moins 6 caractères.');
+  try{const cred=await fbAuth.createUserWithEmailAndPassword(email,password);const state=ensure(fresh());await fbDb.ref('users/'+cred.user.uid).set({profile:{name,avatar:av},state});setLoggedIn(cred.user,{name,avatar:av},state);}
+  catch(e){werr(firebaseError(e));}
+}
+wel.addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;const d=t.dataset;if(d.create){W={mode:'create'};drawWelcome()}else if(d.loginmode){W={mode:'login'};drawWelcome()}else if(d.dologin)await handleLogin();else if(d.docreate)await handleCreate();else if(d.resetpw){const email=(document.getElementById('nemail').value||'').trim();if(!email)return werr('Saisis ton adresse e-mail pour recevoir le lien.');try{await fbAuth.sendPasswordResetEmail(email);werr('E-mail de réinitialisation envoyé. Vérifie ta boîte de réception.')}catch(e){werr(firebaseError(e));}}});
+wel.addEventListener('keydown',e=>{if(e.key==='Enter'){const b=wel.querySelector('[data-dologin],[data-docreate]');if(b)b.click()}});
+pb.onclick=async()=>{if(fbAuth&&fbAuth.currentUser){save();try{await fbAuth.signOut()}catch(e){}fbUser=null;LOGGED=false;PROFILE='';W={mode:'login'};drawWelcome();wel.classList.add('on');pb.textContent='Connexion';toast('Déconnecté.')}else{W={mode:'login'};drawWelcome();wel.classList.add('on')}};
+if(fbReady){fbAuth.onAuthStateChanged(async user=>{if(!user){if(!LOGGED){W={mode:'login'};drawWelcome();wel.classList.add('on')}return;}try{const snap=await fbDb.ref('users/'+user.uid).once('value');const data=snap.val()||{};if(!LOGGED)setLoggedIn(user,data.profile,data.state);}catch(e){werr(firebaseError(e));}})}else{drawWelcome();wel.classList.add('on')}
+if(typeof window!=="undefined")window.addEventListener("beforeunload",()=>save());
+drawWelcome();wel.classList.add("on");setInterval(tick,3000);
+</script>
+</body>
+</html>
